@@ -1,8 +1,1 @@
-version: '3.9'
-services:
-  backend:
-    image: node:20
-    command: ['node', '-e', 'console.log(""backend placeholder"" )']
-  frontend:
-    image: node:20
-    command: ['node', '-e', 'console.log(""frontend placeholder"" )']
+# UniClubs scaffold placeholder
