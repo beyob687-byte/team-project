@@ -1,1 +1,1 @@
-{"name":"uniclubs-backend"}
+{"name":"uniclubs-backend","dependencies":{"dotenv":"^17.4.2","knex":"^3.2.10","pg":"^8.20.0","uuid":"^14.0.0"}}
