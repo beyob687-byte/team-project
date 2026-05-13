@@ -1,0 +1,198 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* ─── Light mode is the default (:root) ─── */
+  :root {
+    --color-deep: 248 250 252;
+    --color-surface: 255 255 255;
+    --color-surface-2: 241 245 249;
+    --color-primary: 0 140 220;
+    --color-primary-dim: 0 110 180;
+    --color-secondary: 124 58 237;
+    --color-secondary-dim: 109 40 217;
+    --color-success: 16 185 129;
+    --color-warning: 245 158 11;
+    --color-danger: 239 68 68;
+    --color-text-1: 15 23 42;
+    --color-text-2: 100 116 139;
+    --color-border-glow: rgba(0, 140, 220, 0.2);
+    --color-border-glow-hover: rgba(0, 140, 220, 0.4);
+    --shadow-card: rgba(0, 0, 0, 0.08);
+    --shadow-glow: rgba(0, 140, 220, 0.15);
+    --shadow-glow-lg: rgba(0, 140, 220, 0.25);
+  }
+
+  /* ─── Dark mode override (:root.dark) ─── */
+  :root.dark {
+    --color-deep: 5 10 20;
+    --color-surface: 13 31 60;
+    --color-surface-2: 21 45 84;
+    --color-primary: 0 170 255;
+    --color-primary-dim: 0 136 204;
+    --color-secondary: 124 58 237;
+    --color-secondary-dim: 109 40 217;
+    --color-success: 16 185 129;
+    --color-warning: 245 158 11;
+    --color-danger: 239 68 68;
+    --color-text-1: 226 238 255;
+    --color-text-2: 107 140 174;
+    --color-border-glow: rgba(0, 180, 255, 0.12);
+    --color-border-glow-hover: rgba(0, 180, 255, 0.3);
+    --shadow-card: rgba(0, 0, 0, 0.4);
+    --shadow-glow: rgba(0, 170, 255, 0.15);
+    --shadow-glow-lg: rgba(0, 170, 255, 0.2);
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-height: 100vh;
+    background-color: rgb(var(--color-deep));
+    color: rgb(var(--color-text-1));
+    font-family: 'Outfit', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+  }
+
+  code, pre, kbd {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Focus-visible ring for accessibility */
+  :focus-visible {
+    outline: 2px solid #00AAFF;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Remove default focus outline when not using keyboard */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #050A14;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1E3A5F;
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #00AAFF;
+  }
+}
+
+/* ─── Component utilities ─── */
+@layer components {
+  .card {
+    @apply bg-surface rounded-card border border-border-glow shadow-card
+           transition-all duration-300 ease-out;
+  }
+  .card:hover {
+    @apply shadow-glow -translate-y-1;
+    border-color: rgba(0, 180, 255, 0.3);
+  }
+
+  .btn-primary {
+    @apply bg-primary text-deep font-semibold px-5 py-2.5 rounded-btn
+           transition-all duration-200 ease-out
+           hover:bg-primary-dim hover:shadow-glow
+           focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-deep
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-white font-semibold px-5 py-2.5 rounded-btn
+           transition-all duration-200 ease-out
+           hover:bg-secondary-dim hover:shadow-glow
+           focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 focus-visible:ring-offset-deep
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-outline {
+    @apply bg-transparent text-primary border border-primary/30 font-semibold px-5 py-2.5 rounded-btn
+           transition-all duration-200 ease-out
+           hover:bg-primary/10 hover:border-primary/60
+           focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-deep
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-danger {
+    @apply bg-danger text-white font-semibold px-5 py-2.5 rounded-btn
+           transition-all duration-200 ease-out
+           hover:bg-red-600 hover:shadow-glow
+           focus-visible:ring-2 focus-visible:ring-danger focus-visible:ring-offset-2 focus-visible:ring-offset-deep
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-text-2 font-medium px-4 py-2 rounded-btn
+           transition-all duration-200 ease-out
+           hover:bg-surface hover:text-text-1
+           focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-deep;
+  }
+
+  .input-field {
+    @apply w-full bg-deep border border-border-glow text-text-1 px-4 py-2.5 rounded-input
+           placeholder:text-text-2/60
+           transition-all duration-200 ease-out
+           focus:border-primary focus:shadow-glow focus:outline-none;
+  }
+
+  .glass {
+    @apply bg-surface/60 backdrop-blur-xl border border-border-glow;
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent;
+  }
+}
+
+/* ─── Accessibility: Reduced motion ─── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── Accessibility: High contrast ─── */
+@media (prefers-contrast: high) {
+  :root {
+    --border-color: rgba(0, 180, 255, 0.5);
+  }
+  .card {
+    border-width: 2px;
+    border-color: rgba(0, 180, 255, 0.5);
+  }
+  .btn-primary {
+    border: 2px solid #00AAFF;
+  }
+}

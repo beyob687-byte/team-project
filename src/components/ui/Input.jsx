@@ -1,0 +1,33 @@
+import React from 'react';
+import { cn } from '../../utils/classNames';
+
+const Input = React.forwardRef(({ className, label, error, ...props }, ref) => {
+  return (
+    <div className="w-full flex flex-col gap-1.5">
+      {label && (
+        <label className="text-sm font-medium text-text-1 ml-1">
+          {label}
+        </label>
+      )}
+      <input
+        ref={ref}
+        className={cn(
+          "w-full bg-deep border border-border-glow text-text-1 px-4 py-2.5 rounded-input",
+          "placeholder:text-text-2/60 transition-all duration-200 ease-out",
+          "focus:border-primary focus:shadow-glow focus:outline-none",
+          "disabled:opacity-50 disabled:cursor-not-allowed",
+          error && "border-danger focus:border-danger focus:shadow-[0_0_15px_rgba(239,68,68,0.2)]",
+          className
+        )}
+        {...props}
+      />
+      {error && (
+        <span className="text-xs text-danger ml-1 mt-0.5">{error}</span>
+      )}
+    </div>
+  );
+});
+
+Input.displayName = 'Input';
+
+export default Input;
