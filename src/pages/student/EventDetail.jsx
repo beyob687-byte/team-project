@@ -7,47 +7,45 @@ import Avatar from '../../components/ui/Avatar';
 import Skeleton from '../../components/ui/Skeleton';
 import StatusBadge from '../../components/shared/StatusBadge';
 import { toast } from '../../components/ui/Toast';
+import { eventsApi } from '../../api/events';
 
 const EventDetail = () => {
-  const { eventId } = useParams();
+  const { clubId, eventId } = useParams();
   const [loading, setLoading] = useState(true);
   const [event, setEvent] = useState(null);
   const [isRSVPd, setIsRSVPd] = useState(false);
   const [rsvpLoading, setRsvpLoading] = useState(false);
+  const [myRsvp, setMyRsvp] = useState(null);
 
   useEffect(() => {
-    setLoading(true);
-    // Simulate API fetch
-    const timer = setTimeout(() => {
-      setEvent({
-        id: eventId,
-        title: 'Intro to React Workshop',
-        description: '<p>Join us for a hands-on workshop where we will build a modern web application from scratch using React, Vite, and Tailwind CSS. No prior React experience is required, but basic JavaScript knowledge is recommended.</p><h3>What to bring:</h3><ul><li>Your laptop</li><li>Charger</li><li>A thirst for knowledge</li></ul><p>Pizza and drinks will be provided!</p>',
-        date: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
-        location: 'Building 4, Room 102',
-        capacity: 50,
-        attendeeCount: 35,
-        status: 'Upcoming',
-        coverImage: null,
-        club: {
-          id: 1,
-          name: 'Computer Science Society',
-          logo: null
-        }
-      });
-      setLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [eventId]);
+    const fetchEventData = async () => {
+      setLoading(true);
+      try {
+        const data = await eventsApi.getEvent(clubId, eventId);
+        setEvent(data.event);
+        setMyRsvp(data.myRsvp);
+        setIsRSVPd(!!data.myRsvp && data.myRsvp.status !== 'cancelled');
+      } catch (err) {
+        toast.error('Failed to load event details');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEventData();
+  }, [clubId, eventId]);
 
   const handleRSVP = async () => {
     setRsvpLoading(true);
-    // Simulate API call
-    await new Promise(r => setTimeout(r, 800));
-    setIsRSVPd(true);
-    setEvent(prev => ({ ...prev, attendeeCount: prev.attendeeCount + 1 }));
-    setRsvpLoading(false);
-    toast.success('Successfully RSVP\'d to event!');
+    try {
+      const data = await eventsApi.rsvpEvent(clubId, eventId);
+      setMyRsvp(data.rsvp);
+      setIsRSVPd(true);
+      toast.success('Successfully RSVP\'d to event!');
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Failed to RSVP');
+    } finally {
+      setRsvpLoading(false);
+    }
   };
 
   const handleShare = () => {
@@ -74,20 +72,19 @@ const EventDetail = () => {
 
   if (!event) return null;
 
-  const eventDate = new Date(event.date);
-  const isFull = event.capacity && event.attendeeCount >= event.capacity;
+  const eventDate = new Date(event.start_datetime);
 
   return (
     <div className="max-w-4xl mx-auto pb-12">
-      <Link to="/dashboard" className="inline-flex items-center text-sm text-text-2 hover:text-primary transition-colors mb-6 group">
+      <Link to={`/clubs/${clubId}`} className="inline-flex items-center text-sm text-text-2 hover:text-primary transition-colors mb-6 group">
         <ArrowLeft className="w-4 h-4 mr-1 group-hover:-translate-x-1 transition-transform" />
         Back
       </Link>
 
       {/* Cover Image */}
       <div className="w-full h-64 md:h-80 bg-surface-2 rounded-xl border border-border-glow overflow-hidden relative mb-8">
-        {event.coverImage ? (
-          <img src={event.coverImage} alt={event.title} className="w-full h-full object-cover" />
+        {event.cover_image_url ? (
+          <img src={event.cover_image_url} alt={event.title} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
             <Calendar className="w-20 h-20 text-primary/20" />
@@ -104,10 +101,6 @@ const EventDetail = () => {
         <div className="lg:col-span-2 space-y-8">
           <div>
             <h1 className="text-3xl md:text-4xl font-display font-bold text-text-1 mb-4">{event.title}</h1>
-            <Link to={`/clubs/${event.club.id}`} className="inline-flex items-center gap-3 p-2 pr-4 rounded-full bg-surface-2/50 border border-border-glow hover:border-primary/50 transition-colors">
-              <Avatar src={event.club.logo} size="sm" />
-              <span className="text-sm font-medium text-text-1">Hosted by <span className="text-primary">{event.club.name}</span></span>
-            </Link>
           </div>
 
           <div className="prose prose-invert max-w-none text-text-2">
@@ -144,15 +137,7 @@ const EventDetail = () => {
                   <Users className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-text-1">{event.attendeeCount} / {event.capacity || '∞'} attending</p>
-                  {event.capacity && (
-                    <div className="w-full h-1.5 bg-deep rounded-full mt-2 overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full ${isFull ? 'bg-danger' : 'bg-primary'}`} 
-                        style={{ width: `${Math.min((event.attendeeCount / event.capacity) * 100, 100)}%` }}
-                      />
-                    </div>
-                  )}
+                  <p className="font-medium text-text-1">Event capacity: {event.capacity || 'Unlimited'}</p>
                 </div>
               </div>
             </div>
@@ -167,10 +152,9 @@ const EventDetail = () => {
                 <Button 
                   className="w-full shadow-glow" 
                   onClick={handleRSVP} 
-                  disabled={isFull}
                   isLoading={rsvpLoading}
                 >
-                  {isFull ? 'Waitlist Full' : 'RSVP Now'}
+                  RSVP Now
                 </Button>
               )}
               

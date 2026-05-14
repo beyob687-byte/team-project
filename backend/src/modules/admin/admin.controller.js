@@ -668,40 +668,116 @@ exports.updateUserStatus = async function updateUserStatus(req, res) {
 };
 
 exports.getClubHealthReport = async function getClubHealthReport(req, res) {
-  const clubsByStatus = await db("clubs")
-    .where({ university_id: req.universityId })
-    .groupBy("status")
-    .select("status")
-    .count("* as count");
-
-  const totalMemberships = await db("club_memberships")
-    .join("clubs", "club_memberships.club_id", "clubs.id")
-    .where("clubs.university_id", req.universityId)
-    .where("club_memberships.status", "active")
-    .count("* as count")
-    .first();
+  const [statusCounts, activeMembers] = await Promise.all([
+    db("clubs")
+      .where({ university_id: req.universityId })
+      .select("status")
+      .count("* as count")
+      .groupBy("status"),
+    db("club_memberships as cm")
+      .join("clubs as c", "c.id", "cm.club_id")
+      .where({ "c.university_id": req.universityId, "cm.status": "active" })
+      .count("* as count")
+      .first(),
+  ]);
 
   return res.status(200).json({
     success: true,
     data: {
-      clubs_by_status: clubsByStatus,
-      total_active_memberships: parseCount(totalMemberships?.count),
+      clubs_by_status: statusCounts.map((s) => ({
+        status: s.status,
+        count: parseCount(s.count),
+      })),
+      total_active_memberships: parseCount(activeMembers?.count),
       generated_at: new Date().toISOString(),
     },
   });
 };
 
 exports.getEngagementReport = async function getEngagementReport(req, res) {
+  const { start, end } = getMonthWindow();
+
+  const [activeUsersRow, totalEventsRow, totalRsvpsRow] = await Promise.all([
+    db("users")
+      .where({ university_id: req.universityId })
+      .andWhere("last_login", ">=", start)
+      .count("* as count")
+      .first(),
+    db("events as e")
+      .join("clubs as c", "c.id", "e.club_id")
+      .where("c.university_id", req.universityId)
+      .andWhere("e.start_datetime", ">=", start)
+      .andWhere("e.start_datetime", "<", end)
+      .count("* as count")
+      .first(),
+    db("event_rsvps as r")
+      .join("events as e", "e.id", "r.event_id")
+      .join("clubs as c", "c.id", "e.club_id")
+      .where("c.university_id", req.universityId)
+      .andWhere("e.start_datetime", ">=", start)
+      .andWhere("e.start_datetime", "<", end)
+      .count("* as count")
+      .first(),
+  ]);
+
   return res.status(200).json({
     success: true,
     data: {
       generated_at: new Date().toISOString(),
       summary: {
-        monthly_active_users: 142,
-        event_attendance_rate: 0.67,
-        post_engagement_rate: 0.41,
-        note: "Placeholder engagement report. Replace with real aggregation later.",
+        monthly_active_users: parseCount(activeUsersRow?.count),
+        events_this_month: parseCount(totalEventsRow?.count),
+        total_rsvps: parseCount(totalRsvpsRow?.count),
+        note: "University-wide engagement overview for the current month.",
       },
     },
   });
+};
+
+exports.awardAchievement = async function awardAchievement(req, res) {
+  const { user_id, club_id, achievement_code } = req.body;
+
+  const achievement = await db("achievements")
+    .where({ code: achievement_code })
+    .first();
+  if (!achievement) {
+    throw createHttpError(
+      404,
+      "ACHIEVEMENT_NOT_FOUND",
+      "Achievement code not found.",
+    );
+  }
+
+  if (user_id) {
+    await db("user_achievements")
+      .insert({
+        user_id,
+        achievement_id: achievement.id,
+        awarded_at: db.fn.now(),
+      })
+      .onConflict(["user_id", "achievement_id"])
+      .ignore();
+  } else if (club_id) {
+    await db("club_achievements")
+      .insert({
+        club_id,
+        achievement_id: achievement.id,
+        awarded_at: db.fn.now(),
+      })
+      .onConflict(["club_id", "achievement_id"])
+      .ignore();
+  } else {
+    throw createHttpError(
+      400,
+      "MISSING_TARGET",
+      "user_id or club_id is required.",
+    );
+  }
+
+  return res
+    .status(201)
+    .json({
+      success: true,
+      data: { message: "Achievement awarded successfully." },
+    });
 };
