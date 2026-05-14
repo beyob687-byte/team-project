@@ -8,7 +8,10 @@ const authMiddleware = require("./middleware/auth");
 const adminMiddleware = require("./middleware/admin");
 const authRoutes = require("./modules/auth/auth.routes");
 const adminRoutes = require("./modules/admin/admin.routes");
-const clubsRoutes = require("./modules/clubs/clubs.routes");
+const {
+  publicRouter: clubsPublicRouter,
+  router: clubsAuthRouter,
+} = require("./modules/clubs/clubs.routes");
 const usersRoutes = require("./modules/users/users.routes");
 const achievementsRoutes = require("./modules/achievements/achievements.routes");
 const { respondentSurveysRouter } = require("./modules/surveys/surveys.routes");
@@ -47,7 +50,8 @@ async function startServer() {
 
   app.use("/api/v1/auth", authRateLimiter, authRoutes);
   app.use("/api/v1/admin", authMiddleware, adminMiddleware, adminRoutes);
-  app.use("/api/v1/clubs", authMiddleware, clubsRoutes);
+  app.use("/api/v1/clubs", clubsPublicRouter);
+  app.use("/api/v1/clubs", authMiddleware, clubsAuthRouter);
   app.use("/api/v1/users", usersRoutes);
   app.use("/api/v1", achievementsRoutes);
   app.use("/api/v1/surveys", respondentSurveysRouter);

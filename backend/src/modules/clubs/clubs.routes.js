@@ -1,13 +1,18 @@
 const router = require("express").Router();
 const catchAsync = require("../../utils/catchAsync");
 const clubRoleMiddleware = require("../../middleware/clubRole");
+const publicTenantMiddleware = require("../../middleware/publicTenant");
 const clubsController = require("./clubs.controller");
 
+// Public routes (no auth required, but need university context)
+const publicRouter = require("express").Router();
+publicRouter.use(publicTenantMiddleware);
+publicRouter.get("/", catchAsync(clubsController.listPublicClubs));
+publicRouter.get("/:clubId/media", catchAsync(clubsController.listClubMedia));
+publicRouter.get("/:clubId", catchAsync(clubsController.getPublicClubProfile));
+
+// Protected routes (auth required)
 router.post("/register", catchAsync(clubsController.registerClub));
-
-router.get("/", catchAsync(clubsController.listPublicClubs));
-
-router.get("/:clubId/media", catchAsync(clubsController.listClubMedia));
 router.post(
   "/:clubId/media",
   clubRoleMiddleware(["president", "vice_president", "secretary"]),
@@ -83,8 +88,6 @@ router.delete(
   catchAsync(clubsController.deleteRole),
 );
 
-router.get("/:clubId", catchAsync(clubsController.getPublicClubProfile));
-
 // mount posts and events routes under clubs
 const postsRoutes = require("../posts/posts.routes");
 const eventsRoutes = require("../events/events.routes");
@@ -98,4 +101,4 @@ router.use("/:clubId/notifications", notificationsRoutes);
 router.use("/:clubId/projects", projectsRoutes);
 router.use("/:clubId/surveys", clubSurveysRouter);
 
-module.exports = router;
+module.exports = { publicRouter, router };
