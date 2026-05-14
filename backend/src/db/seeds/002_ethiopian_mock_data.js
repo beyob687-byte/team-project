@@ -1,8 +1,10 @@
+const bcrypt = require("bcryptjs");
 const { v4: uuidv4 } = require("uuid");
 
 // Fixed UUIDs for referential consistency
 const UNIVERSITY_ID = "a1a1a1a1-1111-4111-1111-111111111111";
 const USER_IDS = {
+  admin: "b0b0b0b0-1111-4111-1111-111111111111",
   abebe: "b1b1b1b1-1111-4111-1111-111111111111",
   tigist: "b2b2b2b2-1111-4111-1111-111111111111",
   yonas: "b3b3b3b3-1111-4111-1111-111111111111",
@@ -67,10 +69,9 @@ const PROJECT_IDS = {
   solar_charger: "c3333333-3333-4333-8333-333333333333",
 };
 
-const MOCK_PASSWORD_HASH =
-  "$2b$10$7Q2y3v3nB8xQxJ5b9m8R3e5P1d8z7r8QhQj8Qj8Qj8Qj8Qj8Qj8Qj";
-
 exports.seed = async function (knex) {
+  const adminPasswordHash = await bcrypt.hash("Admin@1234", 12);
+
   // Truncate all tables in correct order (child first)
   await knex("survey_answers").del();
   await knex("survey_responses").del();
@@ -132,6 +133,24 @@ exports.seed = async function (knex) {
 
   // 2. Insert users (students)
   const users = [
+    {
+      id: USER_IDS.admin,
+      university_id: UNIVERSITY_ID,
+      sso_id: "aau-admin-001",
+      email: "admin@aau.edu.et",
+      first_name: "Alem",
+      last_name: "Tsegaye",
+      student_id: null,
+      user_type: "admin",
+      major: null,
+      department: "Student Affairs",
+      enrollment_status: "active",
+      interests: ["administration", "student life", "policy"],
+      notification_preferences: { email: true, in_app: true, digest: "daily" },
+      created_at: new Date("2023-01-15"),
+      last_login: new Date("2025-05-14"),
+      password_hash: adminPasswordHash,
+    },
     {
       id: USER_IDS.abebe,
       university_id: UNIVERSITY_ID,
@@ -481,10 +500,10 @@ exports.seed = async function (knex) {
       last_login: new Date("2025-05-10"),
     },
   ];
-  const normalizedUsers = users.map(({ sso_id, ...user }) => ({
+  const normalizedUsers = users.map(({ sso_id, password_hash, ...user }) => ({
     ...user,
     external_auth_id: sso_id,
-    password_hash: MOCK_PASSWORD_HASH,
+    password_hash: password_hash ?? null,
   }));
   await knex("users").insert(normalizedUsers);
 
