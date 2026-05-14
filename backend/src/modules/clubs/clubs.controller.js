@@ -1266,3 +1266,83 @@ exports.getMyMembership = async function getMyMembership(req, res) {
     },
   });
 };
+
+exports.getClubAnalytics = async function getClubAnalytics(req, res) {
+  const { clubId } = req.params;
+  const { start } = monthWindow();
+
+  const [totalMembersRow, newMembersRow, leftMembersRow, totalEventsRow, upcomingEventsRow, postsRow] = await Promise.all([
+    db("club_memberships").where({ club_id: clubId, status: "active" }).count("* as count").first(),
+    db("club_memberships").where({ club_id: clubId, status: "active" }).andWhere("join_date", ">=", start).count("* as count").first(),
+    db("club_memberships").where({ club_id: clubId, status: "suspended" }).andWhere("left_date", ">=", start).count("* as count").first(),
+    db("events").where({ club_id: clubId }).count("* as count").first(),
+    db("events").where({ club_id: clubId, status: "published" }).andWhere("start_datetime", ">=", new Date()).count("* as count").first(),
+    db("posts").where({ club_id: clubId, status: "published" }).count("* as count").first(),
+  ]);
+
+  const totalMembers = parseCount(totalMembersRow?.count);
+  const attritionRate = totalMembers > 0 ? parseCount(leftMembersRow?.count) / totalMembers : 0;
+
+  const completedEvents = await db("events").where({ club_id: clubId, status: "completed" }).select("id");
+  let avgAttendanceRate = 0;
+  if (completedEvents.length > 0) {
+    const eventIds = completedEvents.map(e => e.id);
+    const [attendanceCount, rsvpCount] = await Promise.all([
+      db("attendance_records").whereIn("event_id", eventIds).count("* as count").first(),
+      db("event_rsvps").whereIn("event_id", eventIds).andWhere("status", "registered").count("* as count").first(),
+    ]);
+    const rsvps = parseCount(rsvpCount?.count);
+    avgAttendanceRate = rsvps > 0 ? (parseCount(attendanceCount?.count) / rsvps) * 100 : 0;
+  }
+
+  const clubPosts = await db("posts").where({ club_id: clubId }).select("id");
+  let totalComments = 0;
+  if (clubPosts.length > 0) {
+    const commentRow = await db("comments")
+      .where({ commentable_type: "Post" })
+      .whereIn("commentable_id", clubPosts.map(p => p.id))
+      .count("* as count")
+      .first();
+    totalComments = parseCount(commentRow?.count);
+  }
+
+  return res.status(200).json({
+    success: true,
+    data: {
+      member_stats: {
+        total: totalMembers,
+        new_this_month: parseCount(newMembersRow?.count),
+        attrition_rate: attritionRate
+      },
+      event_stats: {
+        total_events: parseCount(totalEventsRow?.count),
+        upcoming_events: parseCount(upcomingEventsRow?.count),
+        avg_attendance_rate: avgAttendanceRate
+      },
+      engagement: {
+        total_posts: parseCount(postsRow?.count),
+        total_comments: totalComments,
+        total_likes: 0
+      }
+    }
+  });
+};
+
+exports.getClubAchievements = async function getClubAchievements(req, res) {
+  const { clubId } = req.params;
+  const items = await db("club_achievements as ca")
+    .join("achievements as a", "a.id", "ca.achievement_id")
+    .where({ "ca.club_id": clubId })
+    .select("a.*", "ca.awarded_at");
+  return res.status(200).json({ success: true, data: items });
+};
+
+exports.listMyMemberships = async function listMyMemberships(req, res) {
+  const items = await db("club_memberships as cm")
+    .join("clubs as c", "c.id", "cm.club_id")
+    .where({ "cm.user_id": req.userId, "cm.status": "active" })
+    .select("c.id", "c.name", "c.short_name", "c.logo_url", "cm.role", "cm.join_date")
+    .orderBy("cm.join_date", "desc");
+
+  return res.status(200).json({ success: true, data: items });
+};
