@@ -899,6 +899,7 @@ exports.up = async function up(knex) {
       .notNullable()
       .defaultTo(knex.fn.now());
     table.uuid("target_entity_id").nullable();
+    table.unique(["user_id", "achievement_id"], "user_achievements_unique");
   });
 
   await knex.schema.createTable("club_achievements", (table) => {
@@ -919,6 +920,7 @@ exports.up = async function up(knex) {
       .timestamp("awarded_at", { useTz: true })
       .notNullable()
       .defaultTo(knex.fn.now());
+    table.unique(["club_id", "achievement_id"], "club_achievements_unique");
   });
 
   await knex.schema.createTable("budgets", (table) => {

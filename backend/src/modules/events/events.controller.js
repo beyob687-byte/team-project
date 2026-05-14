@@ -371,3 +371,89 @@ exports.getAttendanceReport = async function getAttendanceReport(
     return next(error);
   }
 };
+
+exports.updateEvent = async function updateEvent(req, res, next) {
+  try {
+    const event = await db("events")
+      .where({ id: req.params.eventId, club_id: req.params.clubId })
+      .first();
+    if (!event) throw createHttpError(404, "NOT_FOUND", "Event not found");
+
+    const [updated] = await db("events")
+      .where({ id: event.id })
+      .update({
+        ...req.body,
+        updated_at: db.fn.now(),
+      })
+      .returning("*");
+
+    return res.status(200).json({ success: true, data: { event: updated } });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+exports.deleteEvent = async function deleteEvent(req, res, next) {
+  try {
+    const event = await db("events")
+      .where({ id: req.params.eventId, club_id: req.params.clubId })
+      .first();
+    if (!event) throw createHttpError(404, "NOT_FOUND", "Event not found");
+
+    await db("events")
+      .where({ id: event.id })
+      .update({ status: "cancelled", updated_at: db.fn.now() });
+
+    return res.status(200).json({ success: true, message: "Event cancelled" });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+exports.scanTicket = async function scanTicket(req, res, next) {
+  try {
+    const { ticket_code } = req.body;
+    const rsvp = await db("event_rsvps as r")
+      .join("users as u", "u.id", "r.user_id")
+      .select("r.*", "u.first_name", "u.last_name")
+      .where({ "r.ticket_code": ticket_code, "r.event_id": req.params.eventId })
+      .first();
+
+    if (!rsvp) throw createHttpError(404, "NOT_FOUND", "Ticket not found");
+    if (rsvp.status === "attended") throw createHttpError(409, "ALREADY_CHECKED_IN", "User already checked in");
+
+    await db.transaction(async (trx) => {
+      await trx("attendance_records").insert({
+        event_id: req.params.eventId,
+        user_id: rsvp.user_id,
+        rsvp_id: rsvp.id,
+        checkin_method: "qr_scan",
+        marked_by: req.userId
+      });
+      await trx("event_rsvps").where({ id: rsvp.id }).update({ status: "attended" });
+    });
+
+    return res.status(200).json({ success: true, data: { user: { id: rsvp.user_id, name: `${rsvp.first_name} ${rsvp.last_name}` } } });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+exports.selfCheckin = async function selfCheckin(req, res, next) {
+  try {
+    const { checkin_code } = req.body;
+    const event = await db("events").where({ id: req.params.eventId }).first();
+    if (!event) throw createHttpError(404, "NOT_FOUND", "Event not found");
+    if (event.checkin_code !== checkin_code) throw createHttpError(403, "INVALID_CODE", "Invalid check-in code");
+
+    await db("attendance_records").insert({
+      event_id: event.id,
+      user_id: req.userId,
+      checkin_method: "self_code"
+    });
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    return next(error);
+  }
+};

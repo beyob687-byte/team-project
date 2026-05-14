@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Settings, Shield, Bell, LogOut, CheckCircle2 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import Avatar from '../../components/ui/Avatar';
@@ -7,18 +8,63 @@ import Input from '../../components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import { toast } from '../../components/ui/Toast';
+import { usersApi } from '../../api/users';
 
 const Profile = () => {
-  const { user, logout } = useAuthStore();
+  const { user, logoutUser } = useAuthStore();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('general');
   const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    first_name: user?.first_name || '',
+    last_name: user?.last_name || '',
+    major: user?.major || '',
+    department: user?.department || '',
+    bio: user?.bio || '',
+    interests: user?.interests || []
+  });
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        first_name: user.first_name,
+        last_name: user.last_name,
+        major: user.major || '',
+        department: user.department || '',
+        bio: user.bio || '',
+        interests: user.interests || []
+      });
+    }
+  }, [user]);
 
   const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise(r => setTimeout(r, 800));
-    setLoading(false);
-    toast.success('Profile updated successfully');
+    try {
+      await usersApi.updateProfile(user.id, formData);
+      toast.success('Profile updated successfully');
+    } catch (err) {
+      toast.error('Failed to update profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    logoutUser();
+    navigate('/login');
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure? This is permanent.')) {
+      try {
+        await usersApi.deleteAccount(user.id);
+        logoutUser();
+        navigate('/');
+      } catch (err) {
+        toast.error('Could not delete account');
+      }
+    }
   };
 
   return (
@@ -53,7 +99,7 @@ const Profile = () => {
           </button>
           <div className="pt-4 mt-4 border-t border-border-glow">
             <button 
-              onClick={() => logout()}
+              onClick={handleLogout}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-danger hover:bg-danger/10 transition-all"
             >
               <LogOut className="w-4 h-4" /> Sign Out
@@ -80,10 +126,23 @@ const Profile = () => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Input label="Full Name" defaultValue={user?.name || ''} />
-                    <Input label="Student ID" defaultValue={user?.studentId || ''} disabled />
+                    <Input 
+                      label="First Name" 
+                      value={formData.first_name} 
+                      onChange={e => setFormData({...formData, first_name: e.target.value})} 
+                    />
+                    <Input 
+                      label="Last Name" 
+                      value={formData.last_name} 
+                      onChange={e => setFormData({...formData, last_name: e.target.value})} 
+                    />
+                    <Input label="Student ID" defaultValue={user?.student_id || ''} disabled />
                     <Input label="Email Address" type="email" defaultValue={user?.email || ''} disabled />
-                    <Input label="Major / Faculty" defaultValue={user?.major || 'Computer Science'} />
+                    <Input 
+                      label="Major / Faculty" 
+                      value={formData.major} 
+                      onChange={e => setFormData({...formData, major: e.target.value})} 
+                    />
                   </div>
 
                   <div className="pt-4 flex justify-end">
@@ -142,7 +201,7 @@ const Profile = () => {
                 
                 <div className="pt-4 border-t border-border-glow">
                   <h4 className="text-sm font-medium text-danger mb-2">Danger Zone</h4>
-                  <Button variant="outline" className="border-danger text-danger hover:bg-danger/10 hover:border-danger">
+                  <Button variant="outline" onClick={handleDelete} className="border-danger text-danger hover:bg-danger/10 hover:border-danger">
                     Request Account Deletion
                   </Button>
                 </div>
