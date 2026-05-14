@@ -8,86 +8,7 @@ import Skeleton from '../../components/ui/Skeleton';
 import EventCard from '../../components/shared/EventCard';
 import StatusBadge from '../../components/shared/StatusBadge';
 import EmptyState from '../../components/shared/EmptyState';
-
-// Mock club database – keyed by string ID
-const MOCK_CLUBS = {
-  '1': {
-    name: 'Computer Science Society', category: 'STEM', status: 'Active', memberCount: 250,
-    foundingDate: '2015-09-01', gradientFrom: 'from-blue-500/30', gradientTo: 'to-cyan-400/20',
-    description: 'The largest tech community on campus. Weekly workshops, hackathons, and networking with industry professionals.',
-    longDescription: '<p>Welcome to CSS! We believe in learning by doing. Projects range from simple web apps to complex ML models.</p>',
-    socials: { website: 'https://css.uni.edu', instagram: '@uni_css', github: 'uni-css' },
-    events: [
-      { id: 101, title: 'Intro to React Workshop', date: new Date(Date.now() + 86400000).toISOString(), location: 'Building 4, Room 102', attendeeCount: 35 },
-      { id: 102, title: 'Spring Hackathon', date: new Date(Date.now() + 604800000).toISOString(), location: 'Main Library', attendeeCount: 150 },
-    ],
-    members: [
-      { id: 1, name: 'Alice Smith', role: 'President', avatar: null },
-      { id: 2, name: 'Bob Jones', role: 'VP', avatar: null },
-    ],
-    projects: [{ id: 1, title: 'Campus Map App', status: 'Active', description: 'Building a new interactive campus map.' }]
-  },
-  '2': {
-    name: 'Photography Club', category: 'Arts', status: 'Active', memberCount: 85,
-    foundingDate: '2018-02-14', gradientFrom: 'from-pink-500/30', gradientTo: 'to-orange-400/20',
-    description: 'Capture moments and learn the art of visual storytelling through photowalks and darkroom sessions.',
-    longDescription: '<p>Join us for weekly photowalks, darkroom sessions, and exhibition opportunities at the end of each semester.</p>',
-    socials: { website: 'https://photo.uni.edu', instagram: '@uni_photo', github: null },
-    events: [
-      { id: 201, title: 'Golden Hour Photowalk', date: new Date(Date.now() + 172800000).toISOString(), location: 'Main Quad', attendeeCount: 12 },
-    ],
-    members: [{ id: 1, name: 'Sara Lee', role: 'President', avatar: null }],
-    projects: [{ id: 1, title: 'Annual Photo Exhibition', status: 'Active', description: 'End-of-year gallery showcase.' }]
-  },
-  '3': {
-    name: 'Debate Team', category: 'Professional', status: 'Invite Only', memberCount: 40,
-    foundingDate: '2010-01-10', gradientFrom: 'from-yellow-500/30', gradientTo: 'to-amber-400/20',
-    description: 'Hone your public speaking and critical thinking skills. Compete in regional and national tournaments.',
-    longDescription: '<p>We compete in British Parliamentary and World Schools formats. Open practice sessions every Thursday.</p>',
-    socials: { website: null, instagram: '@uni_debate', github: null },
-    events: [
-      { id: 301, title: 'Open Practice Session', date: new Date(Date.now() + 259200000).toISOString(), location: 'Humanities Building, Room 3', attendeeCount: 20 },
-    ],
-    members: [{ id: 1, name: 'Marcus T.', role: 'President', avatar: null }],
-    projects: [{ id: 1, title: 'Regional Tournament Prep', status: 'Active', description: 'Preparing for the spring regional.' }]
-  },
-  '4': {
-    name: 'Robotics Team', category: 'STEM', status: 'Active', memberCount: 45,
-    foundingDate: '2017-09-01', gradientFrom: 'from-green-500/30', gradientTo: 'to-emerald-400/20',
-    description: 'Build and program robots for national competitive events. All engineering levels welcome.',
-    longDescription: '<p>We compete in the FIRST Robotics Competition and VEX Robotics. Meetings every Tuesday and Friday.</p>',
-    socials: { website: null, instagram: '@uni_robotics', github: 'uni-robotics' },
-    events: [
-      { id: 401, title: 'Robot Build Day', date: new Date(Date.now() + 345600000).toISOString(), location: 'Engineering Lab', attendeeCount: 30 },
-    ],
-    members: [{ id: 1, name: 'James K.', role: 'Captain', avatar: null }],
-    projects: [{ id: 1, title: 'FRC Season Bot', status: 'Active', description: 'Current competition robot build.' }]
-  },
-  '5': {
-    name: 'Design Co.', category: 'Arts', status: 'Active', memberCount: 120,
-    foundingDate: '2019-03-15', gradientFrom: 'from-purple-500/30', gradientTo: 'to-violet-400/20',
-    description: 'A vibrant community of UI/UX designers and graphic artists. Portfolio reviews and industry talks.',
-    longDescription: '<p>Weekly design critiques, Figma workshops, and guest talks from senior designers at top companies.</p>',
-    socials: { website: 'https://designco.uni.edu', instagram: '@uni_design', github: null },
-    events: [
-      { id: 501, title: 'Portfolio Review Night', date: new Date(Date.now() + 432000000).toISOString(), location: 'Arts Centre', attendeeCount: 50 },
-    ],
-    members: [{ id: 1, name: 'Nadia M.', role: 'Lead', avatar: null }],
-    projects: [{ id: 1, title: 'University App Redesign', status: 'Active', description: 'Redesigning the student portal.' }]
-  },
-  '6': {
-    name: 'Tennis Club', category: 'Sports', status: 'Active', memberCount: 60,
-    foundingDate: '2012-06-01', gradientFrom: 'from-lime-500/30', gradientTo: 'to-green-400/20',
-    description: 'Weekly matches, training sessions, and inter-university tournaments for all skill levels.',
-    longDescription: '<p>Courts are booked every Monday and Wednesday evening. Beginners coaching available on Saturdays.</p>',
-    socials: { website: null, instagram: '@uni_tennis', github: null },
-    events: [
-      { id: 601, title: 'Inter-Uni Tournament', date: new Date(Date.now() + 1209600000).toISOString(), location: 'Sports Complex', attendeeCount: 40 },
-    ],
-    members: [{ id: 1, name: 'Lena B.', role: 'Captain', avatar: null }],
-    projects: [{ id: 1, title: 'Summer League', status: 'Planning', description: 'Organising the summer inter-club league.' }]
-  },
-};
+import { getMockClub } from '../../utils/mockData';
 
 const ClubProfile = () => {
   const { clubId } = useParams();
@@ -100,9 +21,8 @@ const ClubProfile = () => {
     setLoading(true);
     setJoinStatus(null);
     const timer = setTimeout(() => {
-      // Use string ID to look up — handles both numeric and string IDs from routes
-      const found = MOCK_CLUBS[String(clubId)] || MOCK_CLUBS['1'];
-      setClub({ ...found, id: clubId });
+      const found = getMockClub(clubId);
+      setClub(found);
       setLoading(false);
     }, 600);
     return () => clearTimeout(timer);

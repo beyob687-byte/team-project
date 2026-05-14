@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { authService } from '../services/auth';
+import { USERS } from '../utils/mockData';
 
 const useAuthStore = create((set, get) => ({
   user: null,
@@ -7,54 +7,48 @@ const useAuthStore = create((set, get) => ({
   isLoading: false,
   error: null,
 
-  checkAuth: async () => {
+  checkAuth: () => {
     set({ isLoading: true, error: null });
-    try {
-      const userData = await authService.getCurrentUser();
-      set({ user: userData, isAuthenticated: true, isLoading: false });
-    } catch (error) {
+    // Simulate local storage check
+    const savedUser = localStorage.getItem('mock_user');
+    if (savedUser) {
+      set({ user: JSON.parse(savedUser), isAuthenticated: true, isLoading: false });
+    } else {
       set({ user: null, isAuthenticated: false, isLoading: false });
     }
   },
 
   login: async (credentials) => {
     set({ isLoading: true, error: null });
-    try {
-      const data = await authService.login(credentials);
-      set({ user: data.user, isAuthenticated: true, isLoading: false });
+    await new Promise(resolve => setTimeout(resolve, 800)); // Simulate lag
+
+    const mockUser = credentials.email === 'admin@aau.edu.et' ? USERS.admin : USERS.abebe;
+    
+    if (credentials.password) {
+      set({ user: mockUser, isAuthenticated: true, isLoading: false });
+      localStorage.setItem('mock_user', JSON.stringify(mockUser));
       return true;
-    } catch (error) {
-      set({ 
-        error: error.response?.data?.message || 'Login failed', 
-        isLoading: false 
-      });
-      return false;
     }
+    set({ error: 'Invalid credentials', isLoading: false });
+    return false;
   },
 
   register: async (credentials) => {
     set({ isLoading: true, error: null });
-    try {
-      const data = await authService.register(credentials);
-      set({ user: data.user, isAuthenticated: true, isLoading: false });
-      return true;
-    } catch (error) {
-      set({ 
-        error: error.response?.data?.message || 'Registration failed', 
-        isLoading: false 
-      });
-      return false;
-    }
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const newUser = {
+      ...USERS.abebe,
+      email: credentials.email,
+    };
+    set({ user: newUser, isAuthenticated: true, isLoading: false });
+    localStorage.setItem('mock_user', JSON.stringify(newUser));
+    return true;
   },
 
-  logout: async () => {
-    try {
-      await authService.logout();
-    } catch (e) {
-      console.error("Logout error", e);
-    } finally {
-      set({ user: null, isAuthenticated: false });
-    }
+  logout: () => {
+    localStorage.removeItem('mock_user');
+    set({ user: null, isAuthenticated: false });
   },
   
   hasRole: (roleName) => {
