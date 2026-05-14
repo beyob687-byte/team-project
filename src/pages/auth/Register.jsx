@@ -7,14 +7,16 @@ import Input from '../../components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/Card';
 
 const Register = () => {
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [studentId, setStudentId] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState('');
 
   const navigate = useNavigate();
   const location = useLocation();
-  const { register, isAuthenticated, isLoading, error: storeError } = useAuthStore();
+  const { signupUser, isAuthenticated, isLoading, error: storeError } = useAuthStore();
 
   const from = location.state?.from?.pathname || "/dashboard";
 
@@ -29,7 +31,7 @@ const Register = () => {
     e.preventDefault();
     setLocalError('');
 
-    if (!name || !email || !password) {
+    if (!firstName || !lastName || !email || !password) {
       setLocalError('Please fill in all fields.');
       return;
     }
@@ -39,9 +41,15 @@ const Register = () => {
       return;
     }
 
-    // Attempt register (we will mock this in authStore)
-    if (register) {
-      const success = await register({ name, email, password });
+    // Attempt register
+    if (signupUser) {
+      const success = await signupUser({ 
+        first_name: firstName, 
+        last_name: lastName, 
+        email, 
+        password,
+        student_id: studentId 
+      });
       if (success) {
         navigate(from, { replace: true });
       }
@@ -85,14 +93,31 @@ const Register = () => {
             )}
 
             <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="First Name"
+                  type="text"
+                  placeholder="Abebe"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                />
+                <Input
+                  label="Last Name"
+                  type="text"
+                  placeholder="Kebede"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                />
+              </div>
+
               <Input
-                label="Full Name"
+                label="Student ID (Optional)"
                 type="text"
-                placeholder="John Doe"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                autoComplete="name"
-                required
+                placeholder="UGR/12345/12"
+                value={studentId}
+                onChange={(e) => setStudentId(e.target.value)}
               />
 
               <Input

@@ -53,7 +53,7 @@ const Profile = () => {
           </button>
           <div className="pt-4 mt-4 border-t border-border-glow">
             <button 
-              onClick={() => logout()}
+              onClick={handleLogout}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-danger hover:bg-danger/10 transition-all"
             >
               <LogOut className="w-4 h-4" /> Sign Out
@@ -80,10 +80,23 @@ const Profile = () => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Input label="Full Name" defaultValue={user?.name || ''} />
-                    <Input label="Student ID" defaultValue={user?.studentId || ''} disabled />
+                    <Input 
+                      label="First Name" 
+                      value={formData.first_name} 
+                      onChange={e => setFormData({...formData, first_name: e.target.value})} 
+                    />
+                    <Input 
+                      label="Last Name" 
+                      value={formData.last_name} 
+                      onChange={e => setFormData({...formData, last_name: e.target.value})} 
+                    />
+                    <Input label="Student ID" defaultValue={user?.student_id || ''} disabled />
                     <Input label="Email Address" type="email" defaultValue={user?.email || ''} disabled />
-                    <Input label="Major / Faculty" defaultValue={user?.major || 'Computer Science'} />
+                    <Input 
+                      label="Major / Faculty" 
+                      value={formData.major} 
+                      onChange={e => setFormData({...formData, major: e.target.value})} 
+                    />
                   </div>
 
                   <div className="pt-4 flex justify-end">
@@ -142,7 +155,7 @@ const Profile = () => {
                 
                 <div className="pt-4 border-t border-border-glow">
                   <h4 className="text-sm font-medium text-danger mb-2">Danger Zone</h4>
-                  <Button variant="outline" className="border-danger text-danger hover:bg-danger/10 hover:border-danger">
+                  <Button variant="outline" onClick={handleDelete} className="border-danger text-danger hover:bg-danger/10 hover:border-danger">
                     Request Account Deletion
                   </Button>
                 </div>
