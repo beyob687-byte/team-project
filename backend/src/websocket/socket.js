@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const cookie = require("cookie");
 const appConfig = require("../config");
 
-function setupSocket(server, httpServer) {
+function setupSocket(server) {
   const io = new Server(server, {
     cors: { origin: appConfig.clientUrl, credentials: true },
   });

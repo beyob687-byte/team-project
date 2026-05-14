@@ -16,6 +16,20 @@ router.post(
 router.get("/", authMiddleware, catchAsync(eventsController.listClubEvents));
 router.get("/:eventId", authMiddleware, catchAsync(eventsController.getEvent));
 
+router.patch(
+  "/:eventId",
+  authMiddleware,
+  clubRoleMiddleware(),
+  catchAsync(eventsController.updateEvent),
+);
+
+router.delete(
+  "/:eventId",
+  authMiddleware,
+  clubRoleMiddleware(),
+  catchAsync(eventsController.deleteEvent),
+);
+
 router.post(
   "/:eventId/rsvp",
   authMiddleware,

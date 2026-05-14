@@ -29,7 +29,6 @@ module.exports = {
     process.env.DATABASE_URL ||
     "postgresql://uniclubs_admin:password@localhost:5432/uniclubs_dev",
   databaseSsl: toBoolean(process.env.DATABASE_SSL, false),
-  redisUrl: process.env.REDIS_URL || "redis://localhost:6379",
   clientUrl: process.env.CLIENT_URL || "http://localhost:5173",
   bcryptRounds: toNumber(process.env.BCRYPT_ROUNDS, 12),
   cloudinary: {

@@ -1,6 +1,10 @@
 const db = require("../../db/connection");
 const { uploadImage } = require("../../utils/cloudinaryUpload");
-const { eventCreateSchema, paginationSchema } = require("./events.validation");
+const {
+  eventCreateSchema,
+  eventUpdateSchema,
+  paginationSchema,
+} = require("./events.validation");
 const { evaluateAll } = require("../../utils/achievementEngine");
 
 const createHttpError = (status, code, message) => {
@@ -108,6 +112,97 @@ exports.getEvent = async function getEvent(req, res, next) {
     }
 
     return res.status(200).json({ success: true, data: { event, myRsvp } });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+exports.updateEvent = async function updateEvent(req, res, next) {
+  try {
+    const event = await db("events")
+      .where({ id: req.params.eventId, club_id: req.params.clubId })
+      .first();
+
+    if (!event) throw createHttpError(404, "NOT_FOUND", "Event not found");
+
+    if (event.status === "cancelled" || event.status === "completed") {
+      throw createHttpError(
+        400,
+        "CANNOT_UPDATE",
+        "Cannot update a cancelled or completed event",
+      );
+    }
+
+    const validated = eventUpdateSchema.parse(req.body);
+    const updateData = {};
+    const updatableFields = [
+      "title",
+      "description",
+      "event_type",
+      "location",
+      "virtual_meeting_link",
+      "start_datetime",
+      "end_datetime",
+      "timezone",
+      "visibility",
+      "rsvp_required",
+      "rsvp_opens_at",
+      "rsvp_closes_at",
+      "capacity",
+      "waitlist_enabled",
+      "custom_rsvp_questions",
+      "checkin_method",
+      "checkin_code",
+    ];
+
+    for (const field of updatableFields) {
+      if (validated[field] !== undefined) {
+        updateData[field] = validated[field];
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      throw createHttpError(
+        400,
+        "VALIDATION_ERROR",
+        "No valid event fields were provided.",
+      );
+    }
+
+    const [updated] = await db("events")
+      .where({ id: req.params.eventId, club_id: req.params.clubId })
+      .update(updateData)
+      .returning("*");
+
+    return res.status(200).json({ success: true, data: updated });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+exports.deleteEvent = async function deleteEvent(req, res, next) {
+  try {
+    const event = await db("events")
+      .where({ id: req.params.eventId, club_id: req.params.clubId })
+      .first();
+
+    if (!event) throw createHttpError(404, "NOT_FOUND", "Event not found");
+
+    if (event.status === "cancelled") {
+      throw createHttpError(
+        400,
+        "ALREADY_CANCELLED",
+        "Event is already cancelled",
+      );
+    }
+
+    await db("events")
+      .where({ id: req.params.eventId, club_id: req.params.clubId })
+      .update({ status: "cancelled" });
+
+    return res
+      .status(200)
+      .json({ success: true, data: { message: "Event cancelled" } });
   } catch (error) {
     return next(error);
   }

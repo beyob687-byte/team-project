@@ -668,21 +668,25 @@ exports.updateUserStatus = async function updateUserStatus(req, res) {
 };
 
 exports.getClubHealthReport = async function getClubHealthReport(req, res) {
-  const activeClubs = await db("clubs")
-    .where({ university_id: req.universityId, status: "active" })
+  const clubsByStatus = await db("clubs")
+    .where({ university_id: req.universityId })
+    .groupBy("status")
+    .select("status")
+    .count("* as count");
+
+  const totalMemberships = await db("club_memberships")
+    .join("clubs", "club_memberships.club_id", "clubs.id")
+    .where("clubs.university_id", req.universityId)
+    .where("club_memberships.status", "active")
     .count("* as count")
     .first();
 
   return res.status(200).json({
     success: true,
     data: {
+      clubs_by_status: clubsByStatus,
+      total_active_memberships: parseCount(totalMemberships?.count),
       generated_at: new Date().toISOString(),
-      summary: {
-        active_clubs: parseCount(activeClubs?.count),
-        average_engagement_score: 78,
-        at_risk_clubs: 3,
-        note: "Placeholder club health report. Replace with real aggregation later.",
-      },
     },
   });
 };

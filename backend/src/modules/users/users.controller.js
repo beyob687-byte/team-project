@@ -53,7 +53,7 @@ exports.getProfile = async function getProfile(req, res, next) {
 
     const user = await db("users")
       .select(USER_SELECT_COLUMNS)
-      .where({ id: req.params.id })
+      .where({ id: req.params.id, university_id: req.universityId })
       .first();
 
     if (!user) {
@@ -100,7 +100,7 @@ exports.updateProfile = async function updateProfile(req, res, next) {
     }
 
     const updatedRows = await db("users")
-      .where({ id: req.userId })
+      .where({ id: req.userId, university_id: req.universityId })
       .update(updateData)
       .returning(USER_SELECT_COLUMNS);
 
@@ -129,7 +129,7 @@ exports.updatePreferences = async function updatePreferences(req, res, next) {
     }
 
     const updatedRows = await db("users")
-      .where({ id: req.userId })
+      .where({ id: req.userId, university_id: req.universityId })
       .update({
         notification_preferences: parsed.data.notification_preferences,
       })
@@ -151,9 +151,19 @@ exports.deleteAccount = async function deleteAccount(req, res, next) {
   try {
     ensureSelfAccess(req);
 
-    await db("users").where({ id: req.userId }).update({
-      is_active: false,
-    });
+    const rowsUpdated = await db("users")
+      .where({ id: req.userId, university_id: req.universityId })
+      .update({
+        is_active: false,
+      });
+
+    if (rowsUpdated === 0) {
+      throw createHttpError(
+        500,
+        "DELETE_FAILED",
+        "Account deactivation failed.",
+      );
+    }
 
     return res.status(200).json({
       success: true,

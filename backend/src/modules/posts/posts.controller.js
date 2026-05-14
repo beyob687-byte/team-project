@@ -51,7 +51,13 @@ exports.createPost = async function createPost(req, res, next) {
     // handle poll creation
     if (parsed.post_type === "poll" && parsed.poll_options?.length) {
       const [poll] = await db("polls")
-        .insert({ post_id: created.id, question: parsed.question })
+        .insert({
+          post_id: created.id,
+          question: parsed.question,
+          multiple_choice: parsed.multiple_choice ?? false,
+          results_visibility: parsed.results_visibility ?? "after_close",
+          expires_at: parsed.expires_at || null,
+        })
         .returning("*");
 
       const options = parsed.poll_options.map((text, idx) => ({

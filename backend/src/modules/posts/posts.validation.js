@@ -24,6 +24,7 @@ const postCreateSchema = z.object({
   question: z.string().trim().min(1).optional(),
   poll_options: z.array(z.string().trim().min(1)).optional(),
   multiple_choice: z.boolean().optional().default(false),
+  expires_at: z.string().datetime().optional().nullable(),
   results_visibility: z
     .enum(["always", "after_vote", "after_close"])
     .optional()
