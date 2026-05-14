@@ -8,29 +8,43 @@ import Skeleton from '../../components/ui/Skeleton';
 import EventCard from '../../components/shared/EventCard';
 import StatusBadge from '../../components/shared/StatusBadge';
 import EmptyState from '../../components/shared/EmptyState';
-import { getMockClub } from '../../utils/mockData';
+import { clubsApi } from '../../api/clubs';
 
 const ClubProfile = () => {
   const { clubId } = useParams();
   const [loading, setLoading] = useState(true);
   const [club, setClub] = useState(null);
+  const [myMembership, setMyMembership] = useState(null);
   const [activeTab, setActiveTab] = useState('about');
   const [joinStatus, setJoinStatus] = useState(null); // null | 'pending' | 'sent'
 
   useEffect(() => {
-    setLoading(true);
-    setJoinStatus(null);
-    const timer = setTimeout(() => {
-      const found = getMockClub(clubId);
-      setClub(found);
-      setLoading(false);
-    }, 600);
-    return () => clearTimeout(timer);
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [clubData, membership] = await Promise.all([
+          clubsApi.getClub(clubId),
+          clubsApi.getMyMembership(clubId)
+        ]);
+        setClub(clubData);
+        setMyMembership(membership);
+      } catch (err) {
+        console.error("Error loading club profile", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
   }, [clubId]);
 
-  const handleJoin = () => {
+  const handleJoin = async () => {
     setJoinStatus('pending');
-    setTimeout(() => setJoinStatus('sent'), 1000);
+    try {
+      const result = await clubsApi.joinClub(clubId);
+      setJoinStatus(result.joined ? 'active' : 'sent');
+    } catch (err) {
+      setJoinStatus(null);
+    }
   };
 
   if (loading) {
@@ -52,9 +66,9 @@ const ClubProfile = () => {
 
   const tabs = [
     { id: 'about', label: 'About' },
-    { id: 'events', label: `Events (${club.events.length})` },
-    { id: 'projects', label: `Projects (${club.projects.length})` },
-    { id: 'members', label: `Members (${club.memberCount})` },
+    { id: 'events', label: `Events (${club.upcoming_events?.length || 0})` },
+    { id: 'projects', label: `Projects (${club.public_projects?.length || 0})` },
+    { id: 'members', label: `Members (${club.member_count})` },
   ];
 
   return (
@@ -69,14 +83,14 @@ const ClubProfile = () => {
         
         <div className="px-6 md:px-10 pb-8">
           <div className="flex flex-col md:flex-row md:items-end gap-6 -mt-16 md:-mt-20 relative z-10">
-            <Avatar src={club.logo} alt={club.name} className="w-32 h-32 md:w-40 md:h-40 ring-4 ring-surface shadow-glow" />
+            <Avatar src={club.logo_url} alt={club.name} className="w-32 h-32 md:w-40 md:h-40 ring-4 ring-surface shadow-glow" />
             
             <div className="flex-1 pb-2">
               <h1 className="text-3xl md:text-4xl font-display font-bold text-text-1 mb-2">{club.name}</h1>
               <div className="flex flex-wrap items-center gap-3 text-sm text-text-2">
                 <Badge variant="outline">{club.category}</Badge>
-                <div className="flex items-center gap-1.5"><Users className="w-4 h-4" /> {club.memberCount} Members</div>
-                <div className="flex items-center gap-1.5"><Calendar className="w-4 h-4" /> Est. {new Date(club.foundingDate).getFullYear()}</div>
+                <div className="flex items-center gap-1.5"><Users className="w-4 h-4" /> {club.member_count} Members</div>
+                <div className="flex items-center gap-1.5"><Calendar className="w-4 h-4" /> Est. {new Date(club.created_at).getFullYear()}</div>
               </div>
             </div>
 
@@ -86,14 +100,19 @@ const ClubProfile = () => {
                   <CheckCircle className="w-4 h-4" />
                   Request Sent!
                 </div>
+              ) : myMembership ? (
+                <div className="flex items-center gap-2 px-5 py-2.5 rounded-btn bg-primary/10 border border-primary/30 text-primary font-semibold text-sm">
+                  <CheckCircle className="w-4 h-4" />
+                  {myMembership.role.replace('_', ' ')}
+                </div>
               ) : (
                 <Button
                   className="w-full md:w-auto shadow-glow"
                   isLoading={joinStatus === 'pending'}
                   onClick={handleJoin}
-                  disabled={club.status === 'Invite Only'}
+                  disabled={club.membership_policy === 'invite_only'}
                 >
-                  {club.status === 'Invite Only' ? 'Invite Only' : 'Request to Join'}
+                  {club.membership_policy === 'invite_only' ? 'Invite Only' : 'Request to Join'}
                 </Button>
               )}
             </div>
@@ -125,18 +144,17 @@ const ClubProfile = () => {
             <div className="bg-surface rounded-card border border-border-glow p-6 md:p-8 space-y-6">
               <div>
                 <h3 className="text-xl font-display font-bold text-text-1 mb-3">About Us</h3>
-                <p className="text-text-2 leading-relaxed">{club.description}</p>
+                <p className="text-text-2 leading-relaxed">{club.mission_statement}</p>
               </div>
-              <div className="prose prose-invert max-w-none text-text-2" dangerouslySetInnerHTML={{ __html: club.longDescription }} />
             </div>
           )}
 
           {activeTab === 'events' && (
             <div className="space-y-4">
-              {club.events.length > 0 ? (
+              {club.upcoming_events?.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {club.events.map(event => (
-                    <EventCard key={event.id} event={{...event, club: { name: club.name, logo: club.logo }}} />
+                  {club.upcoming_events.map(event => (
+                    <EventCard key={event.id} event={{...event, date: event.start_datetime, club: { name: club.name, logo: club.logo_url }}} />
                   ))}
                 </div>
               ) : (
@@ -147,8 +165,8 @@ const ClubProfile = () => {
 
           {activeTab === 'projects' && (
             <div className="space-y-4">
-              {club.projects.length > 0 ? (
-                club.projects.map(project => (
+              {club.public_projects?.length > 0 ? (
+                club.public_projects.map(project => (
                   <div key={project.id} className="bg-surface rounded-card border border-border-glow p-6 flex justify-between items-start hover:border-primary/50 transition-colors">
                     <div>
                       <h4 className="font-bold text-text-1 mb-1">{project.title}</h4>
@@ -164,22 +182,7 @@ const ClubProfile = () => {
           )}
 
           {activeTab === 'members' && (
-            <div className="bg-surface rounded-card border border-border-glow overflow-hidden">
-              <div className="px-6 py-4 border-b border-border-glow flex justify-between items-center bg-surface-2/30">
-                <h3 className="font-display font-bold text-text-1">Public Roster</h3>
-              </div>
-              <div className="divide-y divide-border-glow/50">
-                {club.members.map(member => (
-                  <div key={member.id} className="flex items-center justify-between px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <Avatar src={member.avatar} alt={member.name} />
-                      <span className="font-medium text-text-1">{member.name}</span>
-                    </div>
-                    <Badge variant={member.role === 'Member' ? 'outline' : 'primary'}>{member.role}</Badge>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <EmptyState title="Member Roster" description="Roster visibility depends on your membership status and club privacy settings." icon={Users} />
           )}
         </div>
 
@@ -189,8 +192,8 @@ const ClubProfile = () => {
             <h3 className="font-display font-bold text-text-1">Connect</h3>
             
             <div className="space-y-4">
-              {club.socials.website && (
-                <a href={club.socials.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-text-2 hover:text-primary transition-colors group">
+              {club.social_links?.website && (
+                <a href={club.social_links.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-text-2 hover:text-primary transition-colors group">
                   <div className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center group-hover:bg-primary/10">
                     <Globe className="w-5 h-5" />
                   </div>
@@ -198,21 +201,21 @@ const ClubProfile = () => {
                   <ExternalLink className="w-4 h-4 opacity-50" />
                 </a>
               )}
-              {club.socials.instagram && (
-                <a href={`https://instagram.com/${club.socials.instagram.replace('@','')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-text-2 hover:text-primary transition-colors group">
+              {club.social_links?.instagram && (
+                <a href={`https://instagram.com/${club.social_links.instagram.replace('@','')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-text-2 hover:text-primary transition-colors group">
                   <div className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center group-hover:bg-primary/10">
                     <Instagram className="w-5 h-5" />
                   </div>
-                  <span className="flex-1 truncate">{club.socials.instagram}</span>
+                  <span className="flex-1 truncate">{club.social_links.instagram}</span>
                   <ExternalLink className="w-4 h-4 opacity-50" />
                 </a>
               )}
-              {club.socials.github && (
-                <a href={`https://github.com/${club.socials.github}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-text-2 hover:text-primary transition-colors group">
+              {club.social_links?.github && (
+                <a href={`https://github.com/${club.social_links.github}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-text-2 hover:text-primary transition-colors group">
                   <div className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center group-hover:bg-primary/10">
                     <Github className="w-5 h-5" />
                   </div>
-                  <span className="flex-1 truncate">github.com/{club.socials.github}</span>
+                  <span className="flex-1 truncate">github.com/{club.social_links.github}</span>
                   <ExternalLink className="w-4 h-4 opacity-50" />
                 </a>
               )}

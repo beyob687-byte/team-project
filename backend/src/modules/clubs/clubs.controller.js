@@ -1251,3 +1251,18 @@ exports.registerClub = async function registerClub(req, res) {
     },
   });
 };
+
+exports.getMyMembership = async function getMyMembership(req, res) {
+  const { clubId } = clubIdParamsSchema.parse(req.params);
+  
+  const membership = await db("club_memberships")
+    .where({ club_id: clubId, user_id: req.userId, status: "active" })
+    .first();
+
+  return res.status(200).json({
+    success: true,
+    data: {
+      membership: membership ? { role: membership.role } : null,
+    },
+  });
+};

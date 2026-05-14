@@ -1,18 +1,19 @@
 import React from 'react';
 import { CLUBS, USERS } from '../../utils/mockData';
+import useAuthStore from '../../store/authStore';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import { Calendar, Users, TrendingUp } from 'lucide-react';
 
 const Dashboard = () => {
-  const user = USERS.abebe;
+  const { user } = useAuthStore();
   const myClubs = [CLUBS.tech];
   const recommendations = [CLUBS.cultural];
 
   return (
     <div className="space-y-8 p-6">
       <header>
-        <h1 className="text-3xl font-display font-bold text-text-1">Welcome back, {user.firstName}!</h1>
+        <h1 className="text-3xl font-display font-bold text-text-1">Welcome back, {user?.first_name}!</h1>
         <p className="text-text-2">Here is what is happening in your clubs today.</p>
       </header>
 
@@ -77,11 +78,11 @@ const Dashboard = () => {
           <Card>
             <h3 className="font-bold mb-4">Your Achievements</h3>
             <div className="flex flex-wrap gap-2">
-              {user.badges.map(badge => (
+              {user?.badges?.map(badge => (
                 <div key={badge} className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center border border-border-glow" title={badge}>
                   🏅
                 </div>
-              ))}
+              )) || <p className="text-sm text-text-2 italic">No achievements yet.</p>}
             </div>
           </Card>
         </div>
