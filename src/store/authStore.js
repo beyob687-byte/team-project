@@ -1,57 +1,51 @@
 import { create } from 'zustand';
-import { authService } from '../services/auth';
+import { authApi } from '../pages/student/auth'; // Corrected import path
 
 const useAuthStore = create((set, get) => ({
   user: null,
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: true, // Initially true for the first check
   error: null,
 
-  checkAuth: async () => {
+  fetchUser: async () => {
     set({ isLoading: true, error: null });
     try {
-      const userData = await authService.getCurrentUser();
-      set({ user: userData, isAuthenticated: true, isLoading: false });
-    } catch (error) {
+      const user = await authApi.getMe();
+      set({ user, isAuthenticated: true, isLoading: false });
+    } catch (err) {
       set({ user: null, isAuthenticated: false, isLoading: false });
     }
   },
 
-  login: async (credentials) => {
+  loginUser: async (credentials) => {
     set({ isLoading: true, error: null });
     try {
-      const data = await authService.login(credentials);
-      set({ user: data.user, isAuthenticated: true, isLoading: false });
+      const user = await authApi.login(credentials);
+      set({ user, isAuthenticated: true, isLoading: false });
       return true;
-    } catch (error) {
-      set({ 
-        error: error.response?.data?.message || 'Login failed', 
-        isLoading: false 
-      });
+    } catch (err) {
+      const message = err.response?.data?.error?.message || 'Invalid credentials';
+      set({ error: message, isLoading: false });
       return false;
     }
   },
 
-  register: async (credentials) => {
+  signupUser: async (data) => {
     set({ isLoading: true, error: null });
     try {
-      const data = await authService.register(credentials);
-      set({ user: data.user, isAuthenticated: true, isLoading: false });
+      const user = await authApi.signup(data);
+      set({ user, isAuthenticated: true, isLoading: false });
       return true;
-    } catch (error) {
-      set({ 
-        error: error.response?.data?.message || 'Registration failed', 
-        isLoading: false 
-      });
+    } catch (err) {
+      const message = err.response?.data?.error?.message || 'Registration failed';
+      set({ error: message, isLoading: false });
       return false;
     }
   },
 
-  logout: async () => {
+  logoutUser: async () => {
     try {
-      await authService.logout();
-    } catch (e) {
-      console.error("Logout error", e);
+      await authApi.logout();
     } finally {
       set({ user: null, isAuthenticated: false });
     }
@@ -60,7 +54,6 @@ const useAuthStore = create((set, get) => ({
   hasRole: (roleName) => {
     const user = get().user;
     if (!user) return false;
-    // Assuming user roles are stored in user.roles or similar array
     return user.roles?.includes(roleName) || user.role === roleName;
   }
 }));
