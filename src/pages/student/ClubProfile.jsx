@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, ArrowLeft } from 'react-router-dom';
 import { Users, Calendar, Clock, MapPin, ExternalLink, Globe, Instagram, Github, CheckCircle } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
@@ -9,6 +9,7 @@ import EventCard from '../../components/shared/EventCard';
 import StatusBadge from '../../components/shared/StatusBadge';
 import EmptyState from '../../components/shared/EmptyState';
 import { clubsApi } from '../../api/clubs';
+import ClubPosts from '../../components/shared/ClubPosts';
 
 const ClubProfile = () => {
   const { clubId } = useParams();
@@ -65,7 +66,7 @@ const ClubProfile = () => {
   if (!club) return <EmptyState title="Club not found" description="The club you are looking for does not exist." />;
 
   const tabs = [
-    { id: 'about', label: 'About' },
+    { id: 'posts', label: 'Posts' }, // Added Posts tab
     { id: 'events', label: `Events (${club.upcoming_events?.length || 0})` },
     { id: 'projects', label: `Projects (${club.public_projects?.length || 0})` },
     { id: 'members', label: `Members (${club.member_count})` },
@@ -73,6 +74,11 @@ const ClubProfile = () => {
 
   return (
     <div className="space-y-8">
+      <Link to="/clubs" className="inline-flex items-center text-sm text-text-2 hover:text-primary transition-colors mb-6 group">
+        <ArrowLeft className="w-4 h-4 mr-1 group-hover:-translate-x-1 transition-transform" />
+        Back to Clubs
+      </Link>
+
       {/* Cover & Header */}
       <div className="relative rounded-xl overflow-hidden bg-surface border border-border-glow shadow-card">
         <div className="h-48 md:h-64 w-full bg-gradient-to-r from-primary/30 to-secondary/30 relative">
@@ -140,6 +146,10 @@ const ClubProfile = () => {
       {/* Tab Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
+          {activeTab === 'posts' && (
+            <ClubPosts />
+          )}
+
           {activeTab === 'about' && (
             <div className="bg-surface rounded-card border border-border-glow p-6 md:p-8 space-y-6">
               <div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CLUBS, USERS } from '../../utils/mockData';
+import { CLUBS } from '../../utils/mockData'; // Keep CLUBS for recommendations for now
 import useAuthStore from '../../store/authStore';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
@@ -7,7 +7,7 @@ import { Calendar, Users, TrendingUp } from 'lucide-react';
 import client from './client';
 
 const Dashboard = () => {
-  const { user } = useAuthStore();
+  const { user } = useAuthStore(); // User is from authStore, not mockData
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const recommendations = [CLUBS.cultural];
 
