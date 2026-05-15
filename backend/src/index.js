@@ -24,14 +24,10 @@ const { setupSocket } = require("./websocket/socket");
 const app = express();
 
 app.use(helmet());
-// Configure CORS with a safe allowlist. Add BACKEND_ALLOWED_ORIGINS in backend/.env to extend.
 const allowedOrigins = [
-  // values from env / config
   appConfig.clientUrl,
-  // common deployment origins (added explicitly to ensure deployed apps can reach the API)
   "https://un-iclubs.vercel.app",
   "https://uniclubs-f0ab.onrender.com",
-  // local development fallbacks
   "http://localhost:5173",
   "http://localhost:3000",
 ]
@@ -40,14 +36,19 @@ const allowedOrigins = [
       ? process.env.BACKEND_ALLOWED_ORIGINS.split(",").map((s) => s.trim())
       : [],
   )
-  .filter((v, i, a) => v && a.indexOf(v) === i);
+  .map((url) => url.replace(/\/$/, "")) // Remove trailing slashes
+  .filter((v, i, a) => v && a.indexOf(v) === i); // Remove duplicates
 
 app.use(
   cors({
     origin(origin, callback) {
       // allow non-browser requests like curl/postman (no origin)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
+      // Normalize incoming origin by removing trailing slash for comparison
+      const normalizedOrigin = origin.replace(/\/$/, "");
+      if (allowedOrigins.indexOf(normalizedOrigin) !== -1)
+        return callback(null, true);
+      console.warn(`CORS blocked: ${origin} not in allowed origins`);
       return callback(
         new Error(
           "The CORS policy for this site does not allow access from the specified Origin.",
@@ -56,6 +57,8 @@ app.use(
       );
     },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     optionsSuccessStatus: 200,
   }),
 );
