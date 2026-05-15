@@ -163,6 +163,11 @@ const Login = () => {
             <p className="text-xs text-text-2 text-center font-medium uppercase tracking-wider">
               Quick Demo Login
             </p>
+            <p className="text-xs text-text-2 text-center font-medium uppercase tracking-wider">
+              Use credentials to log in as a demo user
+              <li>email:"admin@aau.edu.et", password:"Admin@1234" for admin</li>
+              <li>email: "abebet@aau.edu.et", password: "Abebe123"</li>
+            </p>
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
