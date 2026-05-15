@@ -17,6 +17,7 @@ const Login = React.lazy(() => import("./pages/auth/Login"));
 const Register = React.lazy(() => import("./pages/auth/Register"));
 
 // Student Pages
+const Home = React.lazy(() => import("./pages/Home"));
 const Dashboard = React.lazy(() => import("./pages/student/Dashboard"));
 const Discover = React.lazy(() => import("./pages/student/Discover"));
 const ClubProfile = React.lazy(() => import("./pages/student/ClubProfile"));
@@ -67,8 +68,7 @@ function App() {
 
           {/* Public / Student Routes */}
           <Route element={<MainLayout />}>
-            <Route path="/" element={<Dashboard />} />{" "}
-            {/* Redirects to dashboard or discover based on auth */}
+            <Route path="/" element={<Home />} />
             <Route path="/discover" element={<Discover />} />
             <Route path="/clubs/:clubId" element={<ClubProfile />} />
             <Route path="/events/:eventId" element={<EventDetail />} />
