@@ -36,7 +36,7 @@ const allowedOrigins = [
       ? process.env.BACKEND_ALLOWED_ORIGINS.split(",").map((s) => s.trim())
       : [],
   )
-  .map((url) => url.replace(/\/$/, "")) // Remove trailing slashes
+  .map((url) => url.trim().replace(/\/$/, "")) // Remove trailing whitespace and slashes
   .filter((v, i, a) => v && a.indexOf(v) === i); // Remove duplicates
 
 app.use(
@@ -44,10 +44,10 @@ app.use(
     origin(origin, callback) {
       // allow non-browser requests like curl/postman (no origin)
       if (!origin) return callback(null, true);
-      // Normalize incoming origin by removing trailing slash for comparison
-      const normalizedOrigin = origin.replace(/\/$/, "");
+      // Normalize incoming origin by removing trailing slash and whitespace
+      const normalizedOrigin = origin.trim().replace(/\/$/, "");
       if (allowedOrigins.indexOf(normalizedOrigin) !== -1)
-        return callback(null, true);
+        return callback(null, normalizedOrigin);
       console.warn(`CORS blocked: ${origin} not in allowed origins`);
       return callback(
         new Error(
@@ -57,8 +57,8 @@ app.use(
       );
     },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "Accept"],
     optionsSuccessStatus: 200,
   }),
 );
