@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { CLUBS } from '../../utils/mockData'; // Keep CLUBS for recommendations for now
-import useAuthStore from '../../store/authStore';
-import Card from '../../components/ui/Card';
-import Badge from '../../components/ui/Badge';
-import { Calendar, Users, TrendingUp } from 'lucide-react';
-import client from './client';
+import React, { useState, useEffect } from "react";
+import { CLUBS } from "../../utils/mockData"; // Keep CLUBS for recommendations for now
+import useAuthStore from "../../store/authStore";
+import { Card } from "../../components/ui/Card";
+import Badge from "../../components/ui/Badge";
+import { Calendar, Users, TrendingUp } from "lucide-react";
+import client from "./client";
 
 const Dashboard = () => {
   const { user } = useAuthStore(); // User is from authStore, not mockData
@@ -15,8 +15,12 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
       try {
         // Fetch general public clubs to display on dashboard
-        const res = await client.get('/clubs', { params: { limit: 5 } });
-        setUpcomingEvents(res.data.data.items.filter(c => !!c.next_upcoming_event).map(c => c.next_upcoming_event));
+        const res = await client.get("/clubs", { params: { limit: 5 } });
+        setUpcomingEvents(
+          res.data.data.items
+            .filter((c) => !!c.next_upcoming_event)
+            .map((c) => c.next_upcoming_event),
+        );
       } catch (err) {
         console.error("Dashboard data fetch failed", err);
       }
@@ -27,8 +31,12 @@ const Dashboard = () => {
   return (
     <div className="space-y-8 p-6">
       <header>
-        <h1 className="text-3xl font-display font-bold text-text-1">Welcome back, {user?.first_name}!</h1>
-        <p className="text-text-2">Here is what is happening in your clubs today.</p>
+        <h1 className="text-3xl font-display font-bold text-text-1">
+          Welcome back, {user?.first_name}!
+        </h1>
+        <p className="text-text-2">
+          Here is what is happening in your clubs today.
+        </p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -41,13 +49,15 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Logic to map real user memberships goes here once getMyClubs endpoint exists */}
               <Card className="hover:border-primary transition-colors cursor-pointer opacity-50">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-surface-2" />
-                    <div>
-                      <h3 className="font-bold italic">Loading Clubs...</h3>
-                      <p className="text-xs text-text-2">Fetching your organizations</p>
-                    </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-lg bg-surface-2" />
+                  <div>
+                    <h3 className="font-bold italic">Loading Clubs...</h3>
+                    <p className="text-xs text-text-2">
+                      Fetching your organizations
+                    </p>
                   </div>
+                </div>
               </Card>
             </div>
           </section>
@@ -57,11 +67,17 @@ const Dashboard = () => {
               <Calendar className="w-5 h-5 text-primary" /> Upcoming Events
             </h2>
             <div className="space-y-4">
-              {upcomingEvents.map(event => (
-                <div key={event.id} className="bg-surface p-4 rounded-xl border border-border-glow flex justify-between items-center">
+              {upcomingEvents.map((event) => (
+                <div
+                  key={event.id}
+                  className="bg-surface p-4 rounded-xl border border-border-glow flex justify-between items-center"
+                >
                   <div>
                     <h4 className="font-bold">{event.title}</h4>
-                    <p className="text-sm text-text-2">{new Date(event.start_datetime).toLocaleDateString()} • {event.location}</p>
+                    <p className="text-sm text-text-2">
+                      {new Date(event.start_datetime).toLocaleDateString()} •{" "}
+                      {event.location}
+                    </p>
                   </div>
                   <Badge variant="outline">Upcoming</Badge>
                 </div>
@@ -76,9 +92,14 @@ const Dashboard = () => {
             <h3 className="font-bold mb-2 flex items-center gap-2">
               <TrendingUp className="w-4 h-4" /> Recommended for You
             </h3>
-            <p className="text-sm text-text-2 mb-4">Based on your community activity.</p>
-            {recommendations.map(club => (
-              <div key={club.id} className="flex items-center gap-3 p-2 hover:bg-surface rounded-lg transition-colors">
+            <p className="text-sm text-text-2 mb-4">
+              Based on your community activity.
+            </p>
+            {recommendations.map((club) => (
+              <div
+                key={club.id}
+                className="flex items-center gap-3 p-2 hover:bg-surface rounded-lg transition-colors"
+              >
                 <img src={club.logo} className="w-8 h-8 rounded" alt="" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{club.name}</p>
@@ -91,11 +112,19 @@ const Dashboard = () => {
           <Card>
             <h3 className="font-bold mb-4">Your Achievements</h3>
             <div className="flex flex-wrap gap-2">
-              {user?.badges?.map(badge => (
-                <div key={badge} className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center border border-border-glow" title={badge}>
+              {user?.badges?.map((badge) => (
+                <div
+                  key={badge}
+                  className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center border border-border-glow"
+                  title={badge}
+                >
                   🏅
                 </div>
-              )) || <p className="text-sm text-text-2 italic">No achievements yet.</p>}
+              )) || (
+                <p className="text-sm text-text-2 italic">
+                  No achievements yet.
+                </p>
+              )}
             </div>
           </Card>
         </div>

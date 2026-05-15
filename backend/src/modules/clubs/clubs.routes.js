@@ -30,6 +30,10 @@ router.patch(
   catchAsync(clubsController.updateClubProfile),
 );
 router.get(
+  "/:clubId/my-membership",
+  catchAsync(clubsController.getMyMembership),
+);
+router.get(
   "/:clubId/manage",
   clubRoleMiddleware(),
   catchAsync(clubsController.getClubManageView),

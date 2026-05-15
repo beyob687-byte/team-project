@@ -11,12 +11,20 @@ export const clubService = {
 
   getById: async (id) => {
     const response = await api.get(`/clubs/${id}`);
-    return response.data;
+    return response.data?.data?.club || response.data?.data || response.data;
+  },
+
+  getMyMembership: async (id) => {
+    const response = await api.get(`/clubs/${id}/my-membership`);
+    return (
+      response.data?.data?.membership || response.data?.data || response.data
+    );
   },
 
   create: async (clubData) => {
-    const response = await api.post("/clubs", clubData);
-    return response.data;
+    // Backend expects club registrations at POST /clubs/register
+    const response = await api.post("/clubs/register", clubData);
+    return response.data?.data || response.data;
   },
 
   update: async (id, clubData) => {

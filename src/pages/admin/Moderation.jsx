@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldAlert, CheckCircle, XCircle, AlertTriangle, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -6,31 +6,40 @@ import Badge from '../../components/ui/Badge';
 import Avatar from '../../components/ui/Avatar';
 import AiBadge from '../../components/shared/AiBadge';
 
-const mockQueue = [
-  { 
-    id: 'req_1', 
-    type: 'Club Registration', 
-    target: 'Blockchain Society', 
-    submittedBy: 'Eve Adams', 
-    date: '2 hours ago',
-    riskLevel: 'Low',
-    details: 'New club registration request for "Blockchain Society". All required fields completed.'
-  },
-  { 
-    id: 'rpt_42', 
-    type: 'User Report', 
-    target: 'Post #4928', 
-    submittedBy: 'Multiple Users (3)', 
-    date: '5 hours ago',
-    riskLevel: 'High',
-    details: 'Post reported for inappropriate language and harassment.',
-    aiFlag: true
-  },
-];
+import { adminClubsApi } from '../../api/adminClubs';
 
 const Moderation = () => {
+  const [queue, setQueue] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchQueue = async () => {
+    setLoading(true);
+    try {
+      const items = await adminClubsApi.getRegistrations({ status: 'pending', page: 1, limit: 50 });
+      // map backend fields to UI-friendly shape
+      const mapped = items.map((it) => ({
+        id: it.id,
+        type: 'Club Registration',
+        target: it.club_name || it.club_short_name || it.club_id,
+        submittedBy: [it.first_name, it.last_name].filter(Boolean).join(' ') || it.email,
+        date: it.submitted_at || it.date || 'unknown',
+        riskLevel: 'Low',
+        details: it.admin_notes || '',
+        raw: it,
+      }));
+      setQueue(mapped);
+    } catch (err) {
+      console.error('Failed to load moderation queue', err);
+      setQueue([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchQueue();
+  }, []);
   return (
-    <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-display font-bold text-text-1">Moderation Queue</h1>
@@ -75,7 +84,7 @@ const Moderation = () => {
       </div>
 
       <div className="space-y-4">
-        {mockQueue.map(item => (
+        {loading ? <div className="p-6">Loading...</div> : queue.map(item => (
           <Card key={item.id} className={item.riskLevel === 'High' ? 'border-danger/30 shadow-[0_0_15px_rgba(239,68,68,0.05)]' : ''}>
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row gap-6">
@@ -106,8 +115,18 @@ const Moderation = () => {
                 <div className="shrink-0 flex flex-col justify-center gap-3 md:w-48 border-t md:border-t-0 md:border-l border-border-glow pt-4 md:pt-0 md:pl-6">
                   {item.type === 'Club Registration' ? (
                     <>
-                      <Button className="w-full bg-success hover:bg-success/80 text-deep"><CheckCircle className="w-4 h-4 mr-2" /> Approve</Button>
-                      <Button variant="outline" className="w-full text-danger border-danger/30 hover:bg-danger/10"><XCircle className="w-4 h-4 mr-2" /> Reject</Button>
+                      <Button onClick={async () => {
+                        try {
+                          await adminClubsApi.resolveRegistration(item.raw.club_id, 'approve');
+                          fetchQueue();
+                        } catch (err) { console.error(err); }
+                      }} className="w-full bg-success hover:bg-success/80 text-deep"><CheckCircle className="w-4 h-4 mr-2" /> Approve</Button>
+                      <Button onClick={async () => {
+                        try {
+                          await adminClubsApi.resolveRegistration(item.raw.club_id, 'reject');
+                          fetchQueue();
+                        } catch (err) { console.error(err); }
+                      }} variant="outline" className="w-full text-danger border-danger/30 hover:bg-danger/10"><XCircle className="w-4 h-4 mr-2" /> Reject</Button>
                     </>
                   ) : (
                     <>

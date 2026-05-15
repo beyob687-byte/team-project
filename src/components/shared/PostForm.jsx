@@ -1,240 +1,449 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { postsApi } from '../../api/posts';
-import { eventsApi } from '../../api/events';
-import { projectsApi } from '../../api/projects';
-import { clubsApi } from '../../api/clubs';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
-import Input from '../../components/ui/Input';
-import Button from '../../components/ui/Button';
-import Select from '../../components/ui/Select';
-import Textarea from '../../components/ui/Textarea';
-import Checkbox from '../../components/ui/Checkbox';
-import { toast } from '../../components/ui/Toast';
-import { PlusCircle, Image, Video, Calendar, Folder, Hash } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Hash } from "lucide-react";
+import { postsApi } from "../../api/posts";
+import { eventsApi } from "../../api/events";
+import { projectsApi } from "../../api/projects";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/Card";
+import Input from "../../components/ui/Input";
+import Button from "../../components/ui/Button";
+import Skeleton from "../../components/ui/Skeleton";
+import EmptyState from "../../components/shared/EmptyState";
+import { toast } from "../../components/ui/Toast";
+
+const emptyForm = {
+  content: "",
+  postType: "general",
+  visibility: "public",
+  images: [],
+  videoUrl: "",
+  linkedEventId: "",
+  linkedProjectId: "",
+  pollQuestion: "",
+  pollOptions: ["", ""],
+  pollMultipleChoice: false,
+  pollResultsVisibility: "after_close",
+  pollExpiresAt: "",
+};
 
 const PostForm = () => {
   const { clubId, postId } = useParams();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const isEdit = !!postId;
+  const isEdit = Boolean(postId);
 
-  const [content, setContent] = useState('');
-  const [postType, setPostType] = useState('general');
-  const [visibility, setVisibility] = useState('public');
-  const [images, setImages] = useState([]);
-  const [videoUrl, setVideoUrl] = useState('');
-  const [linkedEventId, setLinkedEventId] = useState('');
-  const [linkedProjectId, setLinkedProjectId] = useState('');
+  const [form, setForm] = useState(emptyForm);
+  const [events, setEvents] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  // Poll specific states
-  const [pollQuestion, setPollQuestion] = useState('');
-  const [pollOptions, setPollOptions] = useState(['', '']);
-  const [pollMultipleChoice, setPollMultipleChoice] = useState(false);
-  const [pollResultsVisibility, setPollResultsVisibility] = useState('after_close');
-  const [pollExpiresAt, setPollExpiresAt] = useState('');
+  useEffect(() => {
+    let ignore = false;
 
-  // Fetch existing post data for editing
-  const { data: existingPost, isLoading: isLoadingExistingPost } = useQuery({
-    queryKey: ['postDetail', clubId, postId],
-    queryFn: () => postsApi.getPost(clubId, postId),
-    enabled: isEdit,
-    onSuccess: (data) => {
-      setContent(data.content);
-      setPostType(data.post_type);
-      setVisibility(data.visibility);
-      setImages(data.images || []);
-      setVideoUrl(data.video_url || '');
-      setLinkedEventId(data.linked_event?.id || '');
-      setLinkedProjectId(data.linked_project?.id || '');
-      if (data.poll) {
-        setPollQuestion(data.poll.question);
-        setPollOptions(data.poll.options.map(opt => opt.option_text));
-        setPollMultipleChoice(data.poll.multiple_choice);
-        setPollResultsVisibility(data.poll.results_visibility);
-        setPollExpiresAt(data.poll.expires_at ? new Date(data.poll.expires_at).toISOString().slice(0, 16) : '');
+    const loadData = async () => {
+      if (!clubId) return;
+
+      setLoading(true);
+      try {
+        const [eventsResponse, projectsResponse] = await Promise.all([
+          eventsApi.getEvents(clubId, { limit: 100 }),
+          projectsApi.getProjects(clubId, { limit: 100 }),
+        ]);
+
+        if (!ignore) {
+          setEvents(eventsResponse?.items || []);
+          setProjects(projectsResponse?.items || []);
+        }
+
+        if (isEdit) {
+          const existing = await postsApi.getPost(clubId, postId);
+          if (!ignore && existing) {
+            setForm({
+              content: existing.content || "",
+              postType: existing.post_type || "general",
+              visibility: existing.visibility || "public",
+              images: existing.images || [],
+              videoUrl: existing.video_url || "",
+              linkedEventId: existing.linked_event?.id || "",
+              linkedProjectId: existing.linked_project?.id || "",
+              pollQuestion: existing.poll?.question || "",
+              pollOptions: (existing.poll?.options || []).map(
+                (option) => option.option_text || "",
+              ),
+              pollMultipleChoice: Boolean(existing.poll?.multiple_choice),
+              pollResultsVisibility:
+                existing.poll?.results_visibility || "after_close",
+              pollExpiresAt: existing.poll?.expires_at
+                ? new Date(existing.poll.expires_at).toISOString().slice(0, 16)
+                : "",
+            });
+          }
+        }
+      } catch (error) {
+        toast.error(
+          error.response?.data?.error?.message || "Failed to load post data.",
+        );
+      } finally {
+        if (!ignore) setLoading(false);
       }
-    },
-  });
+    };
 
-  // Fetch club events and projects for linking
-  const { data: eventsData } = useQuery({
-    queryKey: ['clubEvents', clubId],
-    queryFn: () => eventsApi.getEvents(clubId, { status: 'published' }),
-  });
-  const { data: projectsData } = useQuery({
-    queryKey: ['clubProjects', clubId],
-    queryFn: () => projectsApi.getProjects(clubId),
-  });
+    loadData();
+    return () => {
+      ignore = true;
+    };
+  }, [clubId, isEdit, postId]);
 
-  const createPostMutation = useMutation({
-    mutationFn: (formData: FormData) => postsApi.createPost(clubId, formData),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['clubPosts', clubId]);
-      toast.success('Post created successfully!');
-      navigate(`/clubs/${clubId}/posts`);
-    },
-    onError: (err) => {
-      toast.error(err.response?.data?.error?.message || 'Failed to create post.');
-      console.error(err);
-    },
-  });
-
-  const updatePostMutation = useMutation({
-    mutationFn: (data: any) => postsApi.updatePost(clubId, postId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['postDetail', clubId, postId]);
-      queryClient.invalidateQueries(['clubPosts', clubId]);
-      toast.success('Post updated successfully!');
-      navigate(`/clubs/${clubId}/posts/${postId}`);
-    },
-    onError: (err) => {
-      toast.error(err.response?.data?.error?.message || 'Failed to update post.');
-      console.error(err);
-    },
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    const formData = new FormData();
-    formData.append('content', content);
-    formData.append('post_type', postType);
-    formData.append('visibility', visibility);
-    if (videoUrl) formData.append('video_url', videoUrl);
-    if (linkedEventId) formData.append('linked_event_id', linkedEventId);
-    if (linkedProjectId) formData.append('linked_project_id', linkedProjectId);
-
-    images.forEach((file) => {
-      if (file instanceof File) { // Only append new File objects
-        formData.append('images', file);
-      }
-    });
-
-    if (postType === 'poll') {
-      formData.append('question', pollQuestion);
-      formData.append('poll_options', JSON.stringify(pollOptions.filter(opt => opt.trim() !== '')));
-      formData.append('multiple_choice', pollMultipleChoice.toString());
-      formData.append('results_visibility', pollResultsVisibility);
-      if (pollExpiresAt) formData.append('expires_at', new Date(pollExpiresAt).toISOString());
-    }
-
-    if (isEdit) {
-      updatePostMutation.mutate(Object.fromEntries(formData.entries())); // PATCH expects JSON, not FormData
-    } else {
-      createPostMutation.mutate(formData);
-    }
+  const updateField = (field, value) => {
+    setForm((current) => ({ ...current, [field]: value }));
   };
 
-  const handleImageChange = (e) => {
-    setImages([...images, ...Array.from(e.target.files)]);
+  const handleImageChange = (event) => {
+    setForm((current) => ({
+      ...current,
+      images: [...current.images, ...Array.from(event.target.files || [])],
+    }));
   };
 
-  const addPollOption = () => setPollOptions([...pollOptions, '']);
+  const addPollOption = () => {
+    setForm((current) => ({
+      ...current,
+      pollOptions: [...current.pollOptions, ""],
+    }));
+  };
+
   const updatePollOption = (index, value) => {
-    const newOptions = [...pollOptions];
-    newOptions[index] = value;
-    setPollOptions(newOptions);
-  };
-  const removePollOption = (index) => {
-    const newOptions = pollOptions.filter((_, i) => i !== index);
-    setPollOptions(newOptions);
+    setForm((current) => {
+      const pollOptions = [...current.pollOptions];
+      pollOptions[index] = value;
+      return { ...current, pollOptions };
+    });
   };
 
-  if (isEdit && isLoadingExistingPost) return <Skeleton className="h-96 w-full" />;
+  const removePollOption = (index) => {
+    setForm((current) => ({
+      ...current,
+      pollOptions: current.pollOptions.filter(
+        (_, optionIndex) => optionIndex !== index,
+      ),
+    }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!clubId) return;
+
+    setSaving(true);
+    try {
+      const payload = new FormData();
+      payload.append("content", form.content);
+      payload.append("post_type", form.postType);
+      payload.append("visibility", form.visibility);
+      if (form.videoUrl) payload.append("video_url", form.videoUrl);
+      if (form.linkedEventId)
+        payload.append("linked_event_id", form.linkedEventId);
+      if (form.linkedProjectId)
+        payload.append("linked_project_id", form.linkedProjectId);
+
+      form.images.forEach((file) => {
+        if (file instanceof File) {
+          payload.append("images", file);
+        }
+      });
+
+      if (form.postType === "poll") {
+        payload.append("question", form.pollQuestion);
+        payload.append(
+          "poll_options",
+          JSON.stringify(
+            form.pollOptions.filter((option) => option.trim() !== ""),
+          ),
+        );
+        payload.append("multiple_choice", String(form.pollMultipleChoice));
+        payload.append("results_visibility", form.pollResultsVisibility);
+        if (form.pollExpiresAt) {
+          payload.append(
+            "expires_at",
+            new Date(form.pollExpiresAt).toISOString(),
+          );
+        }
+      }
+
+      if (isEdit) {
+        await postsApi.updatePost(
+          clubId,
+          postId,
+          Object.fromEntries(payload.entries()),
+        );
+        toast.success("Post updated successfully!");
+        navigate(`/clubs/${clubId}/posts/${postId}`);
+      } else {
+        await postsApi.createPost(clubId, payload);
+        toast.success("Post created successfully!");
+        navigate(`/clubs/${clubId}/posts`);
+      }
+    } catch (error) {
+      toast.error(
+        error.response?.data?.error?.message ||
+          `Failed to ${isEdit ? "update" : "create"} post.`,
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return <Skeleton className="h-96 w-full" />;
+  }
 
   return (
     <div className="max-w-3xl mx-auto p-6">
       <Card>
         <CardHeader>
-          <CardTitle>{isEdit ? 'Edit Post' : 'Create New Post'}</CardTitle>
+          <CardTitle>{isEdit ? "Edit Post" : "Create New Post"}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <Textarea
-              label="Post Content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="What's on your mind?"
-              required
-            />
+            <div>
+              <label className="block text-sm font-medium text-text-2 mb-2">
+                Post Content
+              </label>
+              <textarea
+                value={form.content}
+                onChange={(event) => updateField("content", event.target.value)}
+                placeholder="What's on your mind?"
+                className="w-full min-h-[140px] rounded-md border border-border-glow bg-surface-2 px-4 py-3 text-text-1 outline-none focus:border-primary"
+                required
+              />
+            </div>
 
-            <Select label="Post Type" value={postType} onChange={(e) => setPostType(e.target.value)} disabled={isEdit}>
-              <option value="general">General Announcement</option>
-              <option value="event_promotion">Event Promotion</option>
-              <option value="project_highlight">Project Highlight</option>
-              <option value="poll">Poll</option>
-            </Select>
+            <div>
+              <label className="block text-sm font-medium text-text-2 mb-2">
+                Post Type
+              </label>
+              <select
+                value={form.postType}
+                onChange={(event) =>
+                  updateField("postType", event.target.value)
+                }
+                disabled={isEdit}
+                className="w-full rounded-md border border-border-glow bg-surface-2 px-4 py-3 text-text-1 outline-none focus:border-primary"
+              >
+                <option value="general">General Announcement</option>
+                <option value="event_promotion">Event Promotion</option>
+                <option value="project_highlight">Project Highlight</option>
+                <option value="poll">Poll</option>
+              </select>
+            </div>
 
-            <Select label="Visibility" value={visibility} onChange={(e) => setVisibility(e.target.value)}>
-              <option value="public">Public</option>
-              <option value="members_only">Members Only</option>
-            </Select>
+            <div>
+              <label className="block text-sm font-medium text-text-2 mb-2">
+                Visibility
+              </label>
+              <select
+                value={form.visibility}
+                onChange={(event) =>
+                  updateField("visibility", event.target.value)
+                }
+                className="w-full rounded-md border border-border-glow bg-surface-2 px-4 py-3 text-text-1 outline-none focus:border-primary"
+              >
+                <option value="public">Public</option>
+                <option value="members_only">Members Only</option>
+              </select>
+            </div>
 
-            {postType === 'event_promotion' && (
-              <Select label="Link to Event" value={linkedEventId} onChange={(e) => setLinkedEventId(e.target.value)}>
-                <option value="">Select an event</option>
-                {eventsData?.items?.map(event => (
-                  <option key={event.id} value={event.id}>{event.title}</option>
-                ))}
-              </Select>
+            {form.postType === "event_promotion" && (
+              <div>
+                <label className="block text-sm font-medium text-text-2 mb-2">
+                  Link to Event
+                </label>
+                <select
+                  value={form.linkedEventId}
+                  onChange={(event) =>
+                    updateField("linkedEventId", event.target.value)
+                  }
+                  className="w-full rounded-md border border-border-glow bg-surface-2 px-4 py-3 text-text-1 outline-none focus:border-primary"
+                >
+                  <option value="">Select an event</option>
+                  {events.map((event) => (
+                    <option key={event.id} value={event.id}>
+                      {event.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
 
-            {postType === 'project_highlight' && (
-              <Select label="Link to Project" value={linkedProjectId} onChange={(e) => setLinkedProjectId(e.target.value)}>
-                <option value="">Select a project</option>
-                {projectsData?.items?.map(project => (
-                  <option key={project.id} value={project.id}>{project.title}</option>
-                ))}
-              </Select>
+            {form.postType === "project_highlight" && (
+              <div>
+                <label className="block text-sm font-medium text-text-2 mb-2">
+                  Link to Project
+                </label>
+                <select
+                  value={form.linkedProjectId}
+                  onChange={(event) =>
+                    updateField("linkedProjectId", event.target.value)
+                  }
+                  className="w-full rounded-md border border-border-glow bg-surface-2 px-4 py-3 text-text-1 outline-none focus:border-primary"
+                >
+                  <option value="">Select a project</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
 
-            {postType === 'poll' && (
+            {form.postType === "poll" && (
               <div className="space-y-4 p-4 border border-border-glow rounded-md">
-                <h3 className="font-bold text-text-1 flex items-center gap-2"><Hash className="w-5 h-5" /> Poll Details</h3>
-                <Input label="Poll Question" value={pollQuestion} onChange={(e) => setPollQuestion(e.target.value)} required />
+                <h3 className="font-bold text-text-1 flex items-center gap-2">
+                  <Hash className="w-5 h-5" /> Poll Details
+                </h3>
+
+                <div>
+                  <label className="block text-sm font-medium text-text-2 mb-2">
+                    Poll Question
+                  </label>
+                  <input
+                    value={form.pollQuestion}
+                    onChange={(event) =>
+                      updateField("pollQuestion", event.target.value)
+                    }
+                    className="w-full rounded-md border border-border-glow bg-surface-2 px-4 py-3 text-text-1 outline-none focus:border-primary"
+                    required
+                  />
+                </div>
+
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-text-2">Options</label>
-                  {pollOptions.map((option, index) => (
+                  <label className="block text-sm font-medium text-text-2">
+                    Options
+                  </label>
+                  {form.pollOptions.map((option, index) => (
                     <div key={index} className="flex gap-2 items-center">
-                      <Input
+                      <input
                         type="text"
                         value={option}
-                        onChange={(e) => updatePollOption(index, e.target.value)}
+                        onChange={(event) =>
+                          updatePollOption(index, event.target.value)
+                        }
                         placeholder={`Option ${index + 1}`}
+                        className="w-full rounded-md border border-border-glow bg-surface-2 px-4 py-3 text-text-1 outline-none focus:border-primary"
                         required
                       />
-                      {pollOptions.length > 2 && (
-                        <Button type="button" variant="outline" onClick={() => removePollOption(index)}>Remove</Button>
+                      {form.pollOptions.length > 2 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => removePollOption(index)}
+                        >
+                          Remove
+                        </Button>
                       )}
                     </div>
                   ))}
-                  <Button type="button" variant="secondary" onClick={addPollOption}>Add Option</Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={addPollOption}
+                  >
+                    Add Option
+                  </Button>
                 </div>
-                <Checkbox label="Allow Multiple Choices" checked={pollMultipleChoice} onChange={(e) => setPollMultipleChoice(e.target.checked)} />
-                <Select label="Results Visibility" value={pollResultsVisibility} onChange={(e) => setPollResultsVisibility(e.target.value)}>
-                  <option value="after_vote">After Vote</option>
-                  <option value="always">Always</option>
-                  <option value="after_close">After Close</option>
-                </Select>
-                <Input label="Poll Expires At (Optional)" type="datetime-local" value={pollExpiresAt} onChange={(e) => setPollExpiresAt(e.target.value)} />
+
+                <label className="flex items-center gap-2 text-sm text-text-2">
+                  <input
+                    type="checkbox"
+                    checked={form.pollMultipleChoice}
+                    onChange={(event) =>
+                      updateField("pollMultipleChoice", event.target.checked)
+                    }
+                  />
+                  Allow Multiple Choices
+                </label>
+
+                <div>
+                  <label className="block text-sm font-medium text-text-2 mb-2">
+                    Results Visibility
+                  </label>
+                  <select
+                    value={form.pollResultsVisibility}
+                    onChange={(event) =>
+                      updateField("pollResultsVisibility", event.target.value)
+                    }
+                    className="w-full rounded-md border border-border-glow bg-surface-2 px-4 py-3 text-text-1 outline-none focus:border-primary"
+                  >
+                    <option value="after_vote">After Vote</option>
+                    <option value="always">Always</option>
+                    <option value="after_close">After Close</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-text-2 mb-2">
+                    Poll Expires At (Optional)
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={form.pollExpiresAt}
+                    onChange={(event) =>
+                      updateField("pollExpiresAt", event.target.value)
+                    }
+                    className="w-full rounded-md border border-border-glow bg-surface-2 px-4 py-3 text-text-1 outline-none focus:border-primary"
+                  />
+                </div>
               </div>
             )}
 
-            <Input label="Images (Max 5)" type="file" multiple onChange={handleImageChange} accept="image/*" />
-            {images.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-text-2 mb-2">
+                Images
+              </label>
+              <input
+                type="file"
+                multiple
+                onChange={handleImageChange}
+                accept="image/*"
+              />
+            </div>
+
+            {form.images.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {images.map((file, index) => (
-                  <img key={index} src={file instanceof File ? URL.createObjectURL(file) : file} alt={`Preview ${index}`} className="w-24 h-24 object-cover rounded-md" />
+                {form.images.map((file, index) => (
+                  <img
+                    key={index}
+                    src={
+                      file instanceof File ? URL.createObjectURL(file) : file
+                    }
+                    alt={`Preview ${index}`}
+                    className="w-24 h-24 object-cover rounded-md"
+                  />
                 ))}
               </div>
             )}
 
-            <Input label="Video URL (YouTube/Vimeo link)" type="url" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." />
+            <div>
+              <label className="block text-sm font-medium text-text-2 mb-2">
+                Video URL (YouTube/Vimeo link)
+              </label>
+              <Input
+                type="url"
+                value={form.videoUrl}
+                onChange={(event) =>
+                  updateField("videoUrl", event.target.value)
+                }
+                placeholder="https://youtube.com/watch?v=..."
+              />
+            </div>
 
-            <Button type="submit" isLoading={createPostMutation.isLoading || updatePostMutation.isLoading}>
-              {isEdit ? 'Save Changes' : 'Create Post'}
+            <Button type="submit" isLoading={saving}>
+              {isEdit ? "Save Changes" : "Create Post"}
             </Button>
           </form>
         </CardContent>

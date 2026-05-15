@@ -2,8 +2,8 @@
 import api from "../services/api";
 
 export const notificationsApi = {
-  getNotifications: async () => {
-    const response = await api.get("/notifications");
+  getNotifications: async (params = {}) => {
+    const response = await api.get("/notifications", { params });
     return response.data.data;
   },
 
@@ -14,11 +14,6 @@ export const notificationsApi = {
 
   markAllAsRead: async () => {
     const response = await api.patch("/notifications/read-all");
-    return response.data;
-  },
-
-  deleteNotification: async (id) => {
-    const response = await api.delete(`/notifications/${id}`);
-    return response.data;
+    return response.data.data;
   },
 };

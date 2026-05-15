@@ -22,6 +22,10 @@ const Discover = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [loading, setLoading] = useState(true);
   const [clubs, setClubs] = useState([]);
+  const [showRegister, setShowRegister] = useState(false);
+  const [newClubName, setNewClubName] = useState("");
+  const [newClubCategory, setNewClubCategory] = useState("STEM");
+  const [newClubContact, setNewClubContact] = useState("");
 
   useEffect(() => {
     const fetchClubs = async () => {
@@ -73,8 +77,76 @@ const Discover = () => {
           >
             <Filter className="w-5 h-5" />
           </Button>
+          <Button
+            onClick={() => setShowRegister((s) => !s)}
+            className="shrink-0 rounded-full px-4 bg-primary/10 text-primary hover:bg-primary/20"
+          >
+            Register a Club
+          </Button>
         </div>
       </section>
+
+      {showRegister && (
+        <section className="max-w-2xl mx-auto mb-8 p-4 bg-surface rounded-card border border-border-glow">
+          <h3 className="text-lg font-bold mb-3">Register a New Club</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+            <Input
+              value={newClubName}
+              onChange={(e) => setNewClubName(e.target.value)}
+              placeholder="Club name"
+            />
+            <select
+              value={newClubCategory}
+              onChange={(e) => setNewClubCategory(e.target.value)}
+              className="rounded-btn p-2 border-border-glow bg-surface"
+            >
+              {categories
+                .filter((c) => c !== "All")
+                .map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+            </select>
+            <Input
+              value={newClubContact}
+              onChange={(e) => setNewClubContact(e.target.value)}
+              placeholder="Contact email"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={async () => {
+                if (!newClubName || !newClubCategory || !newClubContact) {
+                  alert("Please fill name, category and contact email.");
+                  return;
+                }
+                try {
+                  await clubsApi.createClub({
+                    name: newClubName,
+                    category: newClubCategory,
+                    contact_email: newClubContact,
+                  });
+                  alert("Registration submitted — admins will review it.");
+                  setShowRegister(false);
+                  setNewClubName("");
+                  setNewClubContact("");
+                  setNewClubCategory("STEM");
+                } catch (err) {
+                  console.error(err);
+                  alert("Failed to register club. See console for details.");
+                }
+              }}
+              className="bg-primary text-deep"
+            >
+              Submit
+            </Button>
+            <Button variant="outline" onClick={() => setShowRegister(false)}>
+              Cancel
+            </Button>
+          </div>
+        </section>
+      )}
 
       {/* Category Filter Strip */}
       <section className="flex items-center gap-2 overflow-x-auto pb-4 hide-scrollbar">

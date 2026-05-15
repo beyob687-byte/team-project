@@ -1,5 +1,5 @@
-import { create } from "zustand";
-import { authApi } from "../pages/student/auth"; // Corrected import path
+import { create } from 'zustand';
+import { authApi } from '../pages/student/auth'; // Corrected import path
 
 const useAuthStore = create((set, get) => ({
   user: null,
@@ -24,8 +24,7 @@ const useAuthStore = create((set, get) => ({
       set({ user, isAuthenticated: true, isLoading: false });
       return true;
     } catch (err) {
-      const message =
-        err.response?.data?.error?.message || "Invalid credentials";
+      const message = err.response?.data?.error?.message || 'Invalid credentials';
       set({ error: message, isLoading: false });
       return false;
     }
@@ -38,8 +37,7 @@ const useAuthStore = create((set, get) => ({
       set({ user, isAuthenticated: true, isLoading: false });
       return true;
     } catch (err) {
-      const message =
-        err.response?.data?.error?.message || "Registration failed";
+      const message = err.response?.data?.error?.message || 'Registration failed';
       set({ error: message, isLoading: false });
       return false;
     }
@@ -52,7 +50,7 @@ const useAuthStore = create((set, get) => ({
       set({ user: null, isAuthenticated: false });
     }
   },
-
+  
   hasRole: (roleName) => {
     const user = get().user;
     if (!user) return false;

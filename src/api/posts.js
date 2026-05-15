@@ -2,28 +2,28 @@
 import api from "../services/api";
 
 export const postsApi = {
-  createPost: async (data) => {
-    const response = await api.post("/posts", data);
+  createPost: async (clubId, data) => {
+    const response = await api.post(`/clubs/${clubId}/posts`, data);
     return response.data.data;
   },
 
-  getPosts: async (params) => {
-    const response = await api.get("/posts", { params });
+  getPosts: async (clubId, params) => {
+    const response = await api.get(`/clubs/${clubId}/posts`, { params });
     return response.data.data;
   },
 
-  getPost: async (id) => {
-    const response = await api.get(`/posts/${id}`);
+  getPost: async (clubId, postId) => {
+    const response = await api.get(`/clubs/${clubId}/posts/${postId}`);
     return response.data.data;
   },
 
-  updatePost: async (id, data) => {
-    const response = await api.patch(`/posts/${id}`, data);
+  updatePost: async (clubId, postId, data) => {
+    const response = await api.patch(`/clubs/${clubId}/posts/${postId}`, data);
     return response.data.data;
   },
 
-  deletePost: async (id) => {
-    const response = await api.delete(`/posts/${id}`);
+  deletePost: async (clubId, postId) => {
+    const response = await api.delete(`/clubs/${clubId}/posts/${postId}`);
     return response.data;
   },
 };

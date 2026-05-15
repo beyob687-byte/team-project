@@ -3,17 +3,17 @@ import api from "../services/api";
 
 export const eventsApi = {
   getEvent: async (clubId, eventId) => {
-    const response = await api.get(`/events/${eventId}`);
+    const response = await api.get(`/clubs/${clubId}/events/${eventId}`);
     return response.data.data;
   },
 
-  rsvpEvent: async (eventId) => {
-    const response = await api.post(`/events/${eventId}/rsvp`);
+  rsvpEvent: async (clubId, eventId) => {
+    const response = await api.post(`/clubs/${clubId}/events/${eventId}/rsvp`);
     return response.data.data;
   },
 
-  getEvents: async (params) => {
-    const response = await api.get("/events", { params });
-    return response.data;
+  getEvents: async (clubId, params = {}) => {
+    const response = await api.get(`/clubs/${clubId}/events`, { params });
+    return response.data.data;
   },
 };
