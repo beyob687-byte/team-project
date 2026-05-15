@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { Users } from 'lucide-react';
 import { Card, CardContent } from '../ui/Card';
@@ -6,7 +6,8 @@ import Avatar from '../ui/Avatar';
 import Badge from '../ui/Badge';
 import AiBadge from './AiBadge';
 
-const ClubCard = ({ club, isRecommendation = false }) => {
+const ClubCard = memo(function ClubCard({ club, isRecommendation = false }) {
+
   return (
     <Link to={`/clubs/${club.id}`} className="block h-full">
       <Card className="h-full flex flex-col hover:-translate-y-2 group cursor-pointer overflow-hidden">
@@ -59,6 +60,6 @@ const ClubCard = ({ club, isRecommendation = false }) => {
       </Card>
     </Link>
   );
-};
+});
 
 export default ClubCard;

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import { Link } from "react-router-dom";
 import {
   MessageCircle,
@@ -27,7 +27,7 @@ const formatTimeAgo = (value) => {
   return `${days}d ago`;
 };
 
-const PostCard = ({ clubId, post }) => {
+const PostCard = memo(function PostCard({ clubId, post }) {
   const renderLinkedEntity = () => {
     if (post.linked_event) {
       return (
@@ -146,6 +146,6 @@ const PostCard = ({ clubId, post }) => {
       </div>
     </div>
   );
-};
+});
 
 export default PostCard;

@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, MapPin, Users } from 'lucide-react';
 import { Card, CardContent } from '../ui/Card';
 import Avatar from '../ui/Avatar';
 import StatusBadge from './StatusBadge';
 
-const EventCard = ({ event }) => {
+const EventCard = memo(function EventCard({ event }) {
   const eventDate = new Date(event.date);
   const formattedDate = eventDate.toLocaleDateString('en-US', { 
     weekday: 'short', month: 'short', day: 'numeric' 
@@ -70,6 +70,6 @@ const EventCard = ({ event }) => {
       </Card>
     </Link>
   );
-};
+});
 
 export default EventCard;

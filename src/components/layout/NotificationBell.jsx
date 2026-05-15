@@ -120,18 +120,25 @@ const NotificationBell = () => {
         ref={bellRef}
         onClick={() => setIsOpen(!isOpen)}
         className="relative text-text-2 hover:text-primary transition-colors"
-        aria-label="Open notifications"
+        aria-label={`Notifications ${unreadCount > 0 ? `: ${unreadCount} unread` : ""}`}
+        aria-expanded={isOpen}
+        aria-haspopup="true"
+        aria-controls="notifications-dropdown"
       >
         <Bell className="w-6 h-6" />
         {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-danger ring-2 ring-surface" />
+          <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-danger ring-2 ring-surface" aria-label={`${unreadCount} unread notifications`} />
         )}
       </button>
 
       {isOpen && (
         <div
+          id="notifications-dropdown"
           ref={dropdownRef}
           className="absolute right-0 mt-2 w-80 bg-surface border border-border-glow rounded-lg shadow-lg z-50"
+          role="dialog"
+          aria-label="Notifications panel"
+          aria-live="polite"
         >
           <div className="p-4 border-b border-border-glow flex justify-between items-center">
             <h3 className="font-bold text-text-1">Notifications</h3>
@@ -139,23 +146,25 @@ const NotificationBell = () => {
               <button
                 onClick={handleMarkAllAsRead}
                 className="text-sm text-primary hover:underline"
+                aria-label="Mark all notifications as read"
               >
                 Mark all as read
               </button>
             )}
           </div>
           {isLoading ? (
-            <div className="p-4 text-text-2">Loading...</div>
+            <div className="p-4 text-text-2" role="status" aria-live="polite">Loading...</div>
           ) : isError ? (
-            <div className="p-4 text-danger flex items-center gap-2">
+            <div className="p-4 text-danger flex items-center gap-2" role="alert">
               <XCircle className="w-4 h-4" /> Failed to load notifications
             </div>
           ) : notifications.length > 0 ? (
-            <div className="divide-y divide-border-glow">
+            <div className="divide-y divide-border-glow" role="list">
               {notifications.map((notif) => (
                 <div
                   key={notif.id}
                   className={`p-3 hover:bg-surface-2 transition-colors ${notif.is_read ? "text-text-2" : "bg-primary/5 text-text-1"}`}
+                  role="listitem"
                 >
                   <Link
                     to={resolveNotificationLink(notif)}
@@ -175,7 +184,7 @@ const NotificationBell = () => {
               ))}
             </div>
           ) : (
-            <div className="p-4 text-text-2">No new notifications.</div>
+            <div className="p-4 text-text-2" role="status">No new notifications.</div>
           )}
           <div className="p-2 border-t border-border-glow text-center">
             <Link

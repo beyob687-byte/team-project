@@ -8,7 +8,10 @@ const authMiddleware = require("./middleware/auth");
 const adminMiddleware = require("./middleware/admin");
 const authRoutes = require("./modules/auth/auth.routes");
 const adminRoutes = require("./modules/admin/admin.routes");
-const { publicRouter: clubsPublicRouter, router: clubsAuthRouter } = require("./modules/clubs/clubs.routes");
+const {
+  publicRouter: clubsPublicRouter,
+  router: clubsAuthRouter,
+} = require("./modules/clubs/clubs.routes");
 const usersRoutes = require("./modules/users/users.routes");
 const achievementsRoutes = require("./modules/achievements/achievements.routes");
 const { respondentSurveysRouter } = require("./modules/surveys/surveys.routes");
@@ -21,10 +24,39 @@ const { setupSocket } = require("./websocket/socket");
 const app = express();
 
 app.use(helmet());
+// Configure CORS with a safe allowlist. Add BACKEND_ALLOWED_ORIGINS in backend/.env to extend.
+const allowedOrigins = [
+  // values from env / config
+  appConfig.clientUrl,
+  // common deployment origins (added explicitly to ensure deployed apps can reach the API)
+  "https://un-iclubs.vercel.app",
+  "https://uniclubs-f0ab.onrender.com",
+  // local development fallbacks
+  "http://localhost:5173",
+  "http://localhost:3000",
+]
+  .concat(
+    process.env.BACKEND_ALLOWED_ORIGINS
+      ? process.env.BACKEND_ALLOWED_ORIGINS.split(",").map((s) => s.trim())
+      : [],
+  )
+  .filter((v, i, a) => v && a.indexOf(v) === i);
+
 app.use(
   cors({
-    origin: appConfig.clientUrl,
+    origin(origin, callback) {
+      // allow non-browser requests like curl/postman (no origin)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
+      return callback(
+        new Error(
+          "The CORS policy for this site does not allow access from the specified Origin.",
+        ),
+        false,
+      );
+    },
     credentials: true,
+    optionsSuccessStatus: 200,
   }),
 );
 app.use(compression());
