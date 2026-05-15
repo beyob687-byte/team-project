@@ -1,6 +1,7 @@
 {
   "name": "uniclubs-backend",
   "scripts": {
+    "build": "echo \"No build step required for backend\"",
     "start": "node src/index.js",
     "migrate": "knex migrate:latest",
     "seed": "knex seed:run"

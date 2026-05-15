@@ -8,10 +8,7 @@ const authMiddleware = require("./middleware/auth");
 const adminMiddleware = require("./middleware/admin");
 const authRoutes = require("./modules/auth/auth.routes");
 const adminRoutes = require("./modules/admin/admin.routes");
-const {
-  publicRouter: clubsPublicRouter,
-  router: clubsAuthRouter,
-} = require("./modules/clubs/clubs.routes");
+const { publicRouter: clubsPublicRouter, router: clubsAuthRouter } = require("./modules/clubs/clubs.routes");
 const usersRoutes = require("./modules/users/users.routes");
 const achievementsRoutes = require("./modules/achievements/achievements.routes");
 const { respondentSurveysRouter } = require("./modules/surveys/surveys.routes");

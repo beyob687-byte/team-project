@@ -1,9 +1,9 @@
 // Adapter for polls API
-import api from "../services/api";
+import api from '../services/api';
 
 export const pollsApi = {
   createPoll: async (data) => {
-    const response = await api.post("/polls", data);
+    const response = await api.post('/polls', data);
     return response.data.data;
   },
 
@@ -18,9 +18,7 @@ export const pollsApi = {
   },
 
   votePoll: async (pollId, optionId) => {
-    const response = await api.post(`/polls/${pollId}/vote`, {
-      option_id: optionId,
-    });
+    const response = await api.post(`/polls/${pollId}/vote`, { option_id: optionId });
     return response.data.data;
   },
 };
