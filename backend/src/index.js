@@ -25,8 +25,9 @@ const app = express();
 
 app.use(helmet());
 const allowedOrigins = [
-  appConfig.clientUrl,
   "https://un-iclubs.vercel.app",
+
+  appConfig.clientUrl,
   "https://uniclubs-f0ab.onrender.com",
   "http://localhost:5173",
   "http://localhost:3000",
